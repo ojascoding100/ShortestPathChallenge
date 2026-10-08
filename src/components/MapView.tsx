@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { ZoomIn, ZoomOut, Maximize2, LocateFixed, Route } from 'lucide-react';
 import { GraphEdge, GraphNode, NodeId } from '../types/graph';
 import { HintData } from '../utils/hintEngine';
@@ -16,6 +16,7 @@ interface MapViewProps {
   onNodeClick: (nodeId: NodeId) => void;
   hintData: HintData | null;
   isHintActive: boolean;
+  onDismissHint?: () => void;
   showShortestPathOverlay: boolean;
   onCloseShortestPathOverlay: () => void;
   optimalRouteResult: RoundTripResult;
@@ -32,6 +33,7 @@ export const MapView: React.FC<MapViewProps> = ({
   onNodeClick,
   hintData,
   isHintActive,
+  onDismissHint,
   showShortestPathOverlay,
   onCloseShortestPathOverlay,
   optimalRouteResult,
@@ -42,8 +44,25 @@ export const MapView: React.FC<MapViewProps> = ({
   const [zoomLevel, setZoomLevel] = useState<number>(1);
   const [panOffset, setPanOffset] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
 
-  // Drag interaction tracking
+  // Refs for tracking fresh state without stale closures in native listeners
+  const zoomLevelRef = useRef<number>(zoomLevel);
+  const panOffsetRef = useRef<{ x: number; y: number }>(panOffset);
+
+  useEffect(() => {
+    zoomLevelRef.current = zoomLevel;
+  }, [zoomLevel]);
+
+  useEffect(() => {
+    panOffsetRef.current = panOffset;
+  }, [panOffset]);
+
+  // Touch and pointer interaction tracking
   const isDraggingRef = useRef<boolean>(false);
+  const isPinchingRef = useRef<boolean>(false);
+  const pinchStartDistRef = useRef<number>(0);
+  const pinchStartZoomRef = useRef<number>(1);
+  const pinchFocalSvgRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
+  const touchStartPosRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
   const dragStartRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
   const panStartRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
   const hasMovedRef = useRef<boolean>(false);
@@ -64,10 +83,10 @@ export const MapView: React.FC<MapViewProps> = ({
   const rawViewY = (BASE_HEIGHT - currentHeight) / 2 + panOffset.y;
 
   // Clamping margins
-  const minX = -60;
-  const maxX = BASE_WIDTH - currentWidth + 60;
-  const minY = -50;
-  const maxY = BASE_HEIGHT - currentHeight + 50;
+  const minX = -80;
+  const maxX = BASE_WIDTH - currentWidth + 80;
+  const minY = -60;
+  const maxY = BASE_HEIGHT - currentHeight + 60;
 
   const viewBoxX = Math.max(minX, Math.min(maxX, rawViewX));
   const viewBoxY = Math.max(minY, Math.min(maxY, rawViewY));
@@ -75,7 +94,7 @@ export const MapView: React.FC<MapViewProps> = ({
 
   // Zoom Handlers
   const handleZoomIn = () => {
-    setZoomLevel((prev) => Math.min(2.4, Number((prev * 1.3).toFixed(2))));
+    setZoomLevel((prev) => Math.min(2.8, Number((prev * 1.3).toFixed(2))));
   };
 
   const handleZoomOut = () => {
@@ -98,12 +117,6 @@ export const MapView: React.FC<MapViewProps> = ({
     const target = nodes[nodeId];
     if (!target) return;
     const targetZoom = Math.max(zoomLevel, 1.45);
-    const viewW = BASE_WIDTH / targetZoom;
-    const viewH = BASE_HEIGHT / targetZoom;
-
-    // Offset needed so target is centered:
-    // viewX = target.x - viewW / 2
-    // rawViewX = (BASE_WIDTH - viewW)/2 + panX  =>  panX = target.x - BASE_WIDTH / 2
     const targetPanX = target.x - BASE_WIDTH / 2;
     const targetPanY = target.y - BASE_HEIGHT / 2;
 
@@ -111,8 +124,174 @@ export const MapView: React.FC<MapViewProps> = ({
     setPanOffset({ x: targetPanX, y: targetPanY });
   }, [nodes, zoomLevel]);
 
-  // Touch and Mouse Drag / Pan handlers
+  // Two-Finger Pinch-to-Zoom & Touch Pan natively attached to container
+  useEffect(() => {
+    const container = svgContainerRef.current;
+    if (!container) return;
+
+    const handleTouchStart = (e: TouchEvent) => {
+      if (e.touches.length === 2) {
+        // Two fingers detected: start pinch-to-zoom
+        if (e.cancelable) e.preventDefault();
+        isPinchingRef.current = true;
+        isDraggingRef.current = false;
+        hasMovedRef.current = false;
+
+        const t0 = e.touches[0];
+        const t1 = e.touches[1];
+        const dist = Math.hypot(t0.clientX - t1.clientX, t0.clientY - t1.clientY);
+        pinchStartDistRef.current = dist > 0 ? dist : 1;
+        pinchStartZoomRef.current = zoomLevelRef.current;
+
+        const midX = (t0.clientX + t1.clientX) / 2;
+        const midY = (t0.clientY + t1.clientY) / 2;
+
+        const rect = container.getBoundingClientRect();
+        const relX = rect.width > 0 ? (midX - rect.left) / rect.width : 0.5;
+        const relY = rect.height > 0 ? (midY - rect.top) / rect.height : 0.5;
+
+        const currentW = BASE_WIDTH / zoomLevelRef.current;
+        const currentH = BASE_HEIGHT / zoomLevelRef.current;
+        const currentViewX = (BASE_WIDTH - currentW) / 2 + panOffsetRef.current.x;
+        const currentViewY = (BASE_HEIGHT - currentH) / 2 + panOffsetRef.current.y;
+
+        // Remember focal point in SVG coordinate space
+        pinchFocalSvgRef.current = {
+          x: currentViewX + relX * currentW,
+          y: currentViewY + relY * currentH,
+        };
+      } else if (e.touches.length === 1) {
+        isPinchingRef.current = false;
+        hasMovedRef.current = false;
+        touchStartPosRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+        panStartRef.current = { ...panOffsetRef.current };
+        if (zoomLevelRef.current > 1) {
+          isDraggingRef.current = true;
+        }
+      }
+    };
+
+    const handleTouchMove = (e: TouchEvent) => {
+      if (e.touches.length === 2 && isPinchingRef.current) {
+        if (e.cancelable) e.preventDefault();
+        hasMovedRef.current = true;
+
+        const t0 = e.touches[0];
+        const t1 = e.touches[1];
+        const dist = Math.hypot(t0.clientX - t1.clientX, t0.clientY - t1.clientY);
+        if (pinchStartDistRef.current <= 0) return;
+
+        const scale = dist / pinchStartDistRef.current;
+        let newZoom = Math.min(2.8, Math.max(1.0, pinchStartZoomRef.current * scale));
+        newZoom = Math.round(newZoom * 100) / 100;
+
+        const midX = (t0.clientX + t1.clientX) / 2;
+        const midY = (t0.clientY + t1.clientY) / 2;
+
+        const rect = container.getBoundingClientRect();
+        const relX = rect.width > 0 ? (midX - rect.left) / rect.width : 0.5;
+        const relY = rect.height > 0 ? (midY - rect.top) / rect.height : 0.5;
+
+        const newW = BASE_WIDTH / newZoom;
+        const newH = BASE_HEIGHT / newZoom;
+
+        // Anchor focal point under the pinch center
+        const newRawX = pinchFocalSvgRef.current.x - relX * newW;
+        const newRawY = pinchFocalSvgRef.current.y - relY * newH;
+
+        let newPanX = newRawX - (BASE_WIDTH - newW) / 2;
+        let newPanY = newRawY - (BASE_HEIGHT - newH) / 2;
+
+        if (newZoom <= 1.02) {
+          newZoom = 1;
+          newPanX = 0;
+          newPanY = 0;
+        }
+
+        setZoomLevel(newZoom);
+        setPanOffset({ x: newPanX, y: newPanY });
+      } else if (e.touches.length === 1 && isDraggingRef.current && zoomLevelRef.current > 1) {
+        const dx = e.touches[0].clientX - touchStartPosRef.current.x;
+        const dy = e.touches[0].clientY - touchStartPosRef.current.y;
+
+        if (Math.hypot(dx, dy) > 6) {
+          hasMovedRef.current = true;
+          if (e.cancelable) e.preventDefault();
+
+          const rect = container.getBoundingClientRect();
+          const currentW = BASE_WIDTH / zoomLevelRef.current;
+          const currentH = BASE_HEIGHT / zoomLevelRef.current;
+          const scaleX = currentW / rect.width;
+          const scaleY = currentH / rect.height;
+
+          setPanOffset({
+            x: panStartRef.current.x - dx * scaleX,
+            y: panStartRef.current.y - dy * scaleY,
+          });
+        }
+      }
+    };
+
+    const handleTouchEnd = (e: TouchEvent) => {
+      if (e.touches.length === 1) {
+        // Transition from 2 fingers to 1 finger
+        isPinchingRef.current = false;
+        touchStartPosRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+        panStartRef.current = { ...panOffsetRef.current };
+        if (zoomLevelRef.current > 1) {
+          isDraggingRef.current = true;
+        }
+      } else if (e.touches.length === 0) {
+        isPinchingRef.current = false;
+        isDraggingRef.current = false;
+        if (hasMovedRef.current) {
+          // Delay clearing flag to suppress accidental tap trigger on finger release
+          setTimeout(() => {
+            hasMovedRef.current = false;
+          }, 180);
+        }
+      }
+    };
+
+    container.addEventListener('touchstart', handleTouchStart, { passive: false });
+    container.addEventListener('touchmove', handleTouchMove, { passive: false });
+    container.addEventListener('touchend', handleTouchEnd, { passive: false });
+    container.addEventListener('touchcancel', handleTouchEnd, { passive: false });
+
+    return () => {
+      container.removeEventListener('touchstart', handleTouchStart);
+      container.removeEventListener('touchmove', handleTouchMove);
+      container.removeEventListener('touchend', handleTouchEnd);
+      container.removeEventListener('touchcancel', handleTouchEnd);
+    };
+  }, []);
+
+  // Desktop trackpad pinch / mouse wheel zoom
+  useEffect(() => {
+    const container = svgContainerRef.current;
+    if (!container) return;
+
+    const handleWheel = (e: WheelEvent) => {
+      if (e.ctrlKey || Math.abs(e.deltaY) > 20) {
+        e.preventDefault();
+        const zoomFactor = e.deltaY < 0 ? 1.15 : 0.87;
+        setZoomLevel((prev) => {
+          const next = Math.max(1, Math.min(2.8, Number((prev * zoomFactor).toFixed(2))));
+          if (next === 1) setPanOffset({ x: 0, y: 0 });
+          return next;
+        });
+      }
+    };
+
+    container.addEventListener('wheel', handleWheel, { passive: false });
+    return () => {
+      container.removeEventListener('wheel', handleWheel);
+    };
+  }, []);
+
+  // Mouse Drag / Pan handlers for desktop (touch pointers filtered out to avoid conflicts)
   const handlePointerDown = (e: React.PointerEvent) => {
+    if (e.pointerType === 'touch') return;
     if (zoomLevel <= 1) return;
     isDraggingRef.current = true;
     hasMovedRef.current = false;
@@ -122,6 +301,7 @@ export const MapView: React.FC<MapViewProps> = ({
   };
 
   const handlePointerMove = (e: React.PointerEvent) => {
+    if (e.pointerType === 'touch') return;
     if (!isDraggingRef.current || zoomLevel <= 1) return;
     const dx = e.clientX - dragStartRef.current.x;
     const dy = e.clientY - dragStartRef.current.y;
@@ -143,6 +323,7 @@ export const MapView: React.FC<MapViewProps> = ({
   };
 
   const handlePointerUp = (e: React.PointerEvent) => {
+    if (e.pointerType === 'touch') return;
     if (isDraggingRef.current) {
       isDraggingRef.current = false;
       try {
@@ -150,11 +331,16 @@ export const MapView: React.FC<MapViewProps> = ({
       } catch {
         // Ignored if pointer capture was already released
       }
+      if (hasMovedRef.current) {
+        setTimeout(() => {
+          hasMovedRef.current = false;
+        }, 120);
+      }
     }
   };
 
   const handleNodeClick = (nodeId: NodeId) => {
-    // If user was dragging / panning, do not trigger travel
+    // If user was pinching, dragging, or panning, do not trigger node travel
     if (hasMovedRef.current) {
       hasMovedRef.current = false;
       return;
@@ -180,11 +366,20 @@ export const MapView: React.FC<MapViewProps> = ({
       
       {/* Top Banner: Hint or Shortest Route notification */}
       {isHintActive && hintData && (
-        <div className="bg-amber-950/70 border-b border-amber-500/30 px-3.5 py-1.5 text-xs text-amber-200 flex items-center justify-between z-10">
-          <p className="leading-snug flex items-center gap-1.5">
-            <span className="text-amber-400 font-bold">💡 Hint:</span>
-            <span>{hintData.clue}</span>
+        <div className="bg-amber-950/70 border-b border-amber-500/30 px-3.5 py-1.5 text-xs text-amber-200 flex items-center justify-between z-10 gap-2">
+          <p className="leading-snug flex items-center gap-1.5 min-w-0">
+            <span className="text-amber-400 font-bold shrink-0">💡 Hint (1/1):</span>
+            <span className="truncate sm:whitespace-normal">{hintData.clue}</span>
           </p>
+          {onDismissHint && (
+            <button
+              onClick={onDismissHint}
+              className="text-amber-400/80 hover:text-amber-200 text-[11px] font-semibold px-2 py-0.5 rounded hover:bg-amber-900/40 shrink-0 cursor-pointer transition-colors"
+              title="Close hint banner"
+            >
+              Dismiss
+            </button>
+          )}
         </div>
       )}
 
@@ -204,35 +399,42 @@ export const MapView: React.FC<MapViewProps> = ({
       )}
 
       {/* Map Status & Zoom Controls Bar */}
-      <div className="bg-slate-900/90 border-b border-slate-800/80 px-3 py-2 flex items-center justify-between gap-2 z-10">
+      <div className="bg-slate-900/90 border-b border-slate-800/80 px-2.5 sm:px-3 py-1.5 sm:py-2 flex items-center justify-between gap-2 z-10 overflow-hidden">
         
         {/* Mobile-Friendly Mission Status Strip */}
-        <div className="flex items-center gap-2 text-xs truncate">
+        <div className="min-w-0 flex-1 flex items-center gap-1.5 sm:gap-2 text-xs overflow-hidden">
           <div className="flex items-center gap-1 font-bold text-amber-400 shrink-0">
             <span>🛵</span>
-            <span className="hidden xs:inline text-slate-300">At:</span>
-            <span className="text-amber-300 font-semibold">{currentNode?.shortName}</span>
+            <span className="hidden xs:inline text-slate-300 font-normal">At:</span>
+            <span className="text-amber-300 font-semibold truncate max-w-[85px] sm:max-w-none">{currentNode?.shortName}</span>
           </div>
 
-          <span className="text-slate-600">➔</span>
+          <span className="text-slate-600 shrink-0 select-none">➔</span>
 
-          <div className="flex items-center gap-1 text-xs truncate">
+          <div className="flex items-center gap-1 text-xs min-w-0 flex-1 overflow-hidden">
             {hasDelivered ? (
-              <span className="text-emerald-400 font-bold flex items-center gap-1">
-                <span>🏁</span>
+              <span className="text-emerald-400 font-bold flex items-center gap-1 min-w-0 truncate">
+                <span className="shrink-0">🏁</span>
                 <span className="truncate">Return to Food Truck</span>
               </span>
             ) : (
-              <span className="text-sky-300 font-bold flex items-center gap-1 truncate">
-                <span>🎯</span>
-                <span className="truncate">Goal: {targetNode?.name}</span>
+              <span className="text-sky-300 font-bold flex items-center gap-1 min-w-0 truncate">
+                <span className="shrink-0">🎯</span>
+                <span className="hidden xs:inline text-slate-400 font-normal">Goal:</span>
+                <span className="truncate">{targetNode?.name}</span>
               </span>
             )}
           </div>
         </div>
 
         {/* Floating Zoom & Pan Toolbar */}
-        <div className="flex items-center gap-1 bg-slate-950/80 border border-slate-800 rounded-lg p-0.5 shrink-0">
+        <div className="flex items-center gap-1 bg-slate-950/80 border border-slate-800 rounded-lg p-0.5 shrink-0 ml-auto">
+          {zoomLevel > 1 && (
+            <span className="text-[10px] font-mono-tabular font-bold text-sky-400 px-1.5 py-0.5 bg-sky-950/70 border border-sky-800/40 rounded">
+              {Math.round(zoomLevel * 100)}%
+            </span>
+          )}
+
           <button
             onClick={handleZoomIn}
             className="w-7 h-7 flex items-center justify-center rounded text-slate-300 hover:text-white hover:bg-slate-800 active:scale-95 transition-all"
@@ -283,13 +485,23 @@ export const MapView: React.FC<MapViewProps> = ({
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
         onPointerCancel={handlePointerUp}
-        className={`relative w-full flex items-center justify-center p-1 sm:p-3 overflow-hidden ${
-          zoomLevel > 1 ? 'cursor-grab active:cursor-grabbing touch-none' : ''
+        style={{ touchAction: 'none' }}
+        className={`relative w-full flex items-center justify-center p-1 sm:p-3 overflow-hidden touch-none select-none ${
+          zoomLevel > 1 ? 'cursor-grab active:cursor-grabbing' : ''
         }`}
       >
+        {/* Mobile touch zoom hint badge */}
+        <div className="absolute bottom-2 left-2 pointer-events-none z-10 flex items-center gap-1.5 text-[10px] text-slate-300 bg-slate-950/85 backdrop-blur-xs px-2 py-1 rounded-md border border-slate-800/80 shadow-sm transition-opacity">
+          <span>🤏</span>
+          <span className="font-medium">
+            {zoomLevel > 1
+              ? `Zoom: ${Math.round(zoomLevel * 100)}% • Drag to pan • Tap ⛶ to reset`
+              : 'Pinch with 2 fingers to zoom'}
+          </span>
+        </div>
         <svg
           viewBox={dynamicViewBox}
-          className="w-full h-auto min-h-[300px] xs:min-h-[340px] max-h-[460px] md:max-h-[500px] select-none"
+          className="w-full h-auto min-h-[300px] xs:min-h-[340px] max-h-[480px] md:max-h-[540px] lg:max-h-[640px] xl:max-h-[720px] select-none"
           preserveAspectRatio="xMidYMid meet"
         >
           <defs>
@@ -680,13 +892,6 @@ export const MapView: React.FC<MapViewProps> = ({
             })}
           </g>
         </svg>
-
-        {/* Small Zoom Helper Notice when zoomed */}
-        {zoomLevel > 1 && (
-          <div className="absolute bottom-2 left-2 bg-slate-900/90 border border-slate-700/80 px-2.5 py-1 rounded-md text-[10px] text-slate-300 pointer-events-none shadow-md">
-            Zoomed {Math.round(zoomLevel * 100)}% • Drag to pan • Tap ⛶ to fit
-          </div>
-        )}
       </div>
 
       {/* Quick Move Button Bar: Adjacent Connected Locations (Mobile-First Touch Bar) */}

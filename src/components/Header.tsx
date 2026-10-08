@@ -10,6 +10,7 @@ interface HeaderProps {
   onUndo: () => void;
   onToggleHint: () => void;
   isHintActive: boolean;
+  hintUsed: boolean;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -20,13 +21,14 @@ export const Header: React.FC<HeaderProps> = ({
   onUndo,
   onToggleHint,
   isHintActive,
+  hintUsed,
 }) => {
   const isOverPar = totalTime > parTime;
   const timeDifference = totalTime - parTime;
 
   return (
-    <header className="border-b border-slate-800/80 bg-slate-950/90 backdrop-blur-md px-3 sm:px-6 py-2 sticky top-0 z-30 shadow-md">
-      <div className="max-w-6xl mx-auto flex flex-wrap items-center justify-between gap-2.5">
+    <header className="border-b border-slate-800/80 bg-slate-950/90 backdrop-blur-md px-3 sm:px-6 lg:px-8 xl:px-10 py-2.5 sticky top-0 z-30 shadow-md">
+      <div className="w-full mx-auto flex flex-wrap items-center justify-between gap-3">
         
         {/* Title & Brand */}
         <div className="flex items-center gap-2.5">
@@ -120,15 +122,35 @@ export const Header: React.FC<HeaderProps> = ({
         <div className="flex items-center gap-1.5">
           <button
             onClick={onToggleHint}
-            className={`h-8 px-2.5 text-xs font-semibold rounded-lg border transition-all cursor-pointer flex items-center gap-1 active:scale-95 ${
+            disabled={hintUsed && !isHintActive}
+            className={`h-8 px-2.5 text-xs font-semibold rounded-lg border transition-all flex items-center gap-1 active:scale-95 ${
               isHintActive
-                ? 'bg-amber-500 text-slate-950 border-amber-400 font-bold shadow-sm'
-                : 'bg-slate-900 hover:bg-slate-800 text-amber-300 border-slate-800 hover:border-amber-500/40'
+                ? 'bg-amber-500 text-slate-950 border-amber-400 font-bold shadow-sm cursor-pointer'
+                : hintUsed
+                ? 'bg-slate-950 text-slate-600 border-slate-900 cursor-not-allowed opacity-50'
+                : 'bg-slate-900 hover:bg-slate-800 text-amber-300 border-slate-800 hover:border-amber-500/40 cursor-pointer'
             }`}
-            title="Toggle hint"
+            title={
+              isHintActive
+                ? 'Hide active hint'
+                : hintUsed
+                ? 'Hint already used for this game (1 per game limit)'
+                : 'Get 1 hint for this game'
+            }
           >
             <Lightbulb className="w-3.5 h-3.5" />
             <span>Hint</span>
+            <span
+              className={`text-[10px] px-1 rounded ${
+                isHintActive
+                  ? 'bg-slate-950/20 text-slate-950 font-extrabold'
+                  : hintUsed
+                  ? 'bg-slate-900 text-slate-600'
+                  : 'bg-amber-500/20 text-amber-300 font-bold'
+              }`}
+            >
+              {hintUsed && !isHintActive ? '0/1' : '1/1'}
+            </span>
           </button>
 
           <button

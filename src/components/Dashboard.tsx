@@ -175,7 +175,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
             Click an adjacent building to begin your delivery route!
           </div>
         ) : (
-          <div className="space-y-1.5 max-h-36 overflow-y-auto pr-1">
+          <div className="space-y-1.5 max-h-36 sm:max-h-48 lg:max-h-64 xl:max-h-80 overflow-y-auto pr-1">
             {moveHistory.map((step) => (
               <div
                 key={step.stepIndex}

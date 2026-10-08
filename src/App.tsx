@@ -34,6 +34,7 @@ export default function App() {
   const [moveHistory, setMoveHistory] = useState<MoveStep[]>([]);
   const [isWinModalOpen, setIsWinModalOpen] = useState<boolean>(false);
   const [isHintActive, setIsHintActive] = useState<boolean>(false);
+  const [hintUsed, setHintUsed] = useState<boolean>(false);
   const [showShortestPathOverlay, setShowShortestPathOverlay] = useState<boolean>(false);
   const [mobileTab, setMobileTab] = useState<'map' | 'dashboard'>('map');
 
@@ -88,6 +89,11 @@ export default function App() {
     setTraveledEdgeIds((prev) => [...prev, edge.id]);
     setMoveHistory((prev) => [...prev, step]);
 
+    // Automatically disable active hint when player moves to a node
+    if (isHintActive) {
+      setIsHintActive(false);
+    }
+
     let newHasDelivered = hasDelivered;
     if (isReachingTarget) {
       newHasDelivered = true;
@@ -133,6 +139,20 @@ export default function App() {
     setMoveHistory([]);
     setIsWinModalOpen(false);
     setShowShortestPathOverlay(false);
+    setIsHintActive(false);
+    setHintUsed(false);
+  };
+
+  // Toggle or activate hint (limit: 1 hint per game)
+  const handleToggleHint = () => {
+    if (isHintActive) {
+      // Allow user to close/hide the hint without consuming a second chance
+      setIsHintActive(false);
+    } else if (!hintUsed) {
+      // Activate the one allowed hint
+      setIsHintActive(true);
+      setHintUsed(true);
+    }
   };
 
   // Cycle to next order
@@ -153,12 +173,13 @@ export default function App() {
         movesCount={moveHistory.length}
         onReset={handleReset}
         onUndo={handleUndo}
-        onToggleHint={() => setIsHintActive((prev) => !prev)}
+        onToggleHint={handleToggleHint}
         isHintActive={isHintActive}
+        hintUsed={hintUsed}
       />
 
       {/* Main Content */}
-      <main className="flex-1 max-w-6xl w-full mx-auto p-2.5 sm:p-4 md:p-6 flex flex-col lg:grid lg:grid-cols-12 gap-3.5 lg:gap-5 items-start">
+      <main className="flex-1 w-full mx-auto p-2.5 sm:p-4 md:p-6 lg:px-8 xl:px-10 flex flex-col lg:grid lg:grid-cols-12 gap-3.5 lg:gap-6 items-start">
         
         {/* Mobile Target Destination Banner (Visible on mobile & tablet) */}
         <div className="lg:hidden w-full">
@@ -219,6 +240,7 @@ export default function App() {
             onNodeClick={handleNodeClick}
             hintData={currentHint}
             isHintActive={isHintActive}
+            onDismissHint={() => setIsHintActive(false)}
             showShortestPathOverlay={showShortestPathOverlay}
             onCloseShortestPathOverlay={() => setShowShortestPathOverlay(false)}
             optimalRouteResult={optimalRouteResult}

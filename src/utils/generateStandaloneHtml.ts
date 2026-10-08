@@ -376,7 +376,7 @@ export function buildStandaloneHtmlContent(): string {
     </div>
 
     <div class="actions">
-      <button class="btn" onclick="toggleHint()">💡 Hint</button>
+      <button id="hint-btn" class="btn" onclick="toggleHint()">💡 Hint (1/1)</button>
       <button class="btn" onclick="undoMove()">↩ Undo</button>
       <button class="btn btn-accent" onclick="resetGame()">↻ Reset</button>
     </div>
@@ -398,7 +398,6 @@ export function buildStandaloneHtmlContent(): string {
           <span id="mobile-banner-emoji" style="font-size: 22px;">💻</span>
           <div style="min-width: 0;">
             <div id="mobile-banner-name" style="font-weight: bold; font-size: 13px; color: #ffffff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">CS Building</div>
-            <div id="mobile-banner-desc" style="font-size: 11px; color: #94a3b8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Boba Milk Tea & Pepperoni Pizza</div>
           </div>
         </div>
         <button class="btn" onclick="viewSolution()" style="font-size: 10px; padding: 4px 8px; border-color: rgba(56, 189, 248, 0.4); color: #38bdf8; white-space: nowrap; shrink: 0;">
@@ -522,6 +521,7 @@ export function buildStandaloneHtmlContent(): string {
     let moveHistory = [];
     let traveledEdges = [];
     let hintVisible = false;
+    let hintUsed = false;
     let showingSolution = false;
 
     function getEdge(from, to) {
@@ -703,6 +703,19 @@ export function buildStandaloneHtmlContent(): string {
 
       moveHistory.push({ from: fromNode, to: nodeId, weight: move.weight, delivered: reachedTarget });
 
+      // Automatically disable hint after clicking a node
+      if (hintVisible) {
+        hintVisible = false;
+        document.getElementById('hint-banner').style.display = 'none';
+        const hintBtn = document.getElementById('hint-btn');
+        if (hintBtn) {
+          hintBtn.innerText = hintUsed ? '💡 Hint (0/1)' : '💡 Hint (1/1)';
+          hintBtn.disabled = hintUsed;
+          hintBtn.style.opacity = hintUsed ? '0.5' : '1';
+          hintBtn.style.cursor = hintUsed ? 'not-allowed' : 'pointer';
+        }
+      }
+
       updateUI();
 
       if (hasDelivered && currentNode === 'food_truck') {
@@ -797,8 +810,20 @@ export function buildStandaloneHtmlContent(): string {
     }
 
     function toggleHint() {
-      hintVisible = !hintVisible;
+      if (hintVisible) {
+        hintVisible = false;
+      } else if (!hintUsed) {
+        hintVisible = true;
+        hintUsed = true;
+      }
       document.getElementById('hint-banner').style.display = hintVisible ? 'block' : 'none';
+      const hintBtn = document.getElementById('hint-btn');
+      if (hintBtn) {
+        hintBtn.innerText = hintVisible ? '💡 Hide Hint' : (hintUsed ? '💡 Hint (0/1)' : '💡 Hint (1/1)');
+        hintBtn.disabled = hintUsed && !hintVisible;
+        hintBtn.style.opacity = (hintUsed && !hintVisible) ? '0.5' : '1';
+        hintBtn.style.cursor = (hintUsed && !hintVisible) ? 'not-allowed' : 'pointer';
+      }
       updateUI();
     }
 
@@ -819,6 +844,16 @@ export function buildStandaloneHtmlContent(): string {
       moveHistory = [];
       traveledEdges = [];
       showingSolution = false;
+      hintVisible = false;
+      hintUsed = false;
+      document.getElementById('hint-banner').style.display = 'none';
+      const hintBtn = document.getElementById('hint-btn');
+      if (hintBtn) {
+        hintBtn.innerText = '💡 Hint (1/1)';
+        hintBtn.disabled = false;
+        hintBtn.style.opacity = '1';
+        hintBtn.style.cursor = 'pointer';
+      }
       document.getElementById('solution-banner').style.display = 'none';
       updateUI();
     }
@@ -876,6 +911,106 @@ export function buildStandaloneHtmlContent(): string {
     function closeModal() {
       document.getElementById('win-modal').style.display = 'none';
     }
+
+    // Standalone touch pinch-to-zoom & pan
+    (function initTouchPinchZoom() {
+      const wrap = document.querySelector('.map-svg-wrap');
+      const svg = document.getElementById('map-svg');
+      if (!wrap || !svg) return;
+
+      wrap.style.touchAction = 'none';
+
+      let zoom = 1;
+      let panX = 0;
+      let panY = 0;
+      let isPinching = false;
+      let isDragging = false;
+      let startDist = 0;
+      let startZoom = 1;
+      let startTouch = { x: 0, y: 0 };
+      let startPan = { x: 0, y: 0 };
+      let focalPoint = { x: 460, y: 265 };
+
+      function updateViewBox() {
+        const w = 920 / zoom;
+        const h = 530 / zoom;
+        let vx = (920 - w) / 2 + panX;
+        let vy = (530 - h) / 2 + panY;
+        vx = Math.max(-80, Math.min(920 - w + 80, vx));
+        vy = Math.max(-60, Math.min(530 - h + 60, vy));
+        svg.setAttribute('viewBox', vx + ' ' + vy + ' ' + w + ' ' + h);
+      }
+
+      wrap.addEventListener('touchstart', function(e) {
+        if (e.touches.length === 2) {
+          if (e.cancelable) e.preventDefault();
+          isPinching = true;
+          isDragging = false;
+          const t0 = e.touches[0];
+          const t1 = e.touches[1];
+          startDist = Math.hypot(t0.clientX - t1.clientX, t0.clientY - t1.clientY) || 1;
+          startZoom = zoom;
+          const rect = wrap.getBoundingClientRect();
+          const midX = (t0.clientX + t1.clientX) / 2;
+          const midY = (t0.clientY + t1.clientY) / 2;
+          const relX = rect.width ? (midX - rect.left) / rect.width : 0.5;
+          const relY = rect.height ? (midY - rect.top) / rect.height : 0.5;
+          const curW = 920 / zoom;
+          const curH = 530 / zoom;
+          focalPoint = {
+            x: (920 - curW) / 2 + panX + relX * curW,
+            y: (530 - curH) / 2 + panY + relY * curH
+          };
+        } else if (e.touches.length === 1) {
+          isPinching = false;
+          startTouch = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+          startPan = { x: panX, y: panY };
+          if (zoom > 1) isDragging = true;
+        }
+      }, { passive: false });
+
+      wrap.addEventListener('touchmove', function(e) {
+        if (e.touches.length === 2 && isPinching) {
+          if (e.cancelable) e.preventDefault();
+          const dist = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
+          const scale = dist / startDist;
+          zoom = Math.min(2.8, Math.max(1, startZoom * scale));
+          const rect = wrap.getBoundingClientRect();
+          const midX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
+          const midY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
+          const relX = rect.width ? (midX - rect.left) / rect.width : 0.5;
+          const relY = rect.height ? (midY - rect.top) / rect.height : 0.5;
+          const newW = 920 / zoom;
+          const newH = 530 / zoom;
+          panX = (focalPoint.x - relX * newW) - (920 - newW) / 2;
+          panY = (focalPoint.y - relY * newH) - (530 - newH) / 2;
+          if (zoom <= 1.02) { zoom = 1; panX = 0; panY = 0; }
+          updateViewBox();
+        } else if (e.touches.length === 1 && isDragging && zoom > 1) {
+          const dx = e.touches[0].clientX - startTouch.x;
+          const dy = e.touches[0].clientY - startTouch.y;
+          if (Math.hypot(dx, dy) > 6) {
+            if (e.cancelable) e.preventDefault();
+            const rect = wrap.getBoundingClientRect();
+            panX = startPan.x - dx * (920 / zoom / rect.width);
+            panY = startPan.y - dy * (530 / zoom / rect.height);
+            updateViewBox();
+          }
+        }
+      }, { passive: false });
+
+      wrap.addEventListener('touchend', function(e) {
+        if (e.touches.length === 1) {
+          isPinching = false;
+          startTouch = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+          startPan = { x: panX, y: panY };
+          if (zoom > 1) isDragging = true;
+        } else if (e.touches.length === 0) {
+          isPinching = false;
+          isDragging = false;
+        }
+      });
+    })();
 
     changeTarget('cs_building');
   </script>

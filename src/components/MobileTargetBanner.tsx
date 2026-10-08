@@ -84,11 +84,6 @@ export const MobileTargetBanner: React.FC<MobileTargetBannerProps> = ({
             <h2 className="text-xs sm:text-sm font-bold text-white flex items-center gap-1.5 truncate leading-tight">
               <span>{hasDelivered ? 'Return to Food Truck' : targetNode.name}</span>
             </h2>
-            <p className="text-[11px] text-slate-300 truncate mt-0.5">
-              {hasDelivered
-                ? `Order dropped at ${targetNode.name}! Head back to base.`
-                : targetNode.orderItem || targetNode.description}
-            </p>
           </div>
         </div>
 
