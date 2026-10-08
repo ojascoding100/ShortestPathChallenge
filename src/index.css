@@ -1,0 +1,70 @@
+@import "tailwindcss";
+
+@layer base {
+  body {
+    font-family: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  }
+  
+  .font-mono-tabular {
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+/* Stable SVG Pulsing animation using stroke & opacity (prevents any coordinate jumping) */
+@keyframes ring-pulse {
+  0% {
+    r: 32px;
+    opacity: 0.9;
+    stroke-width: 2.5px;
+  }
+  50% {
+    r: 38px;
+    opacity: 0.35;
+    stroke-width: 1.5px;
+  }
+  100% {
+    r: 32px;
+    opacity: 0.9;
+    stroke-width: 2.5px;
+  }
+}
+
+@keyframes dash-flow {
+  to {
+    stroke-dashoffset: -24;
+  }
+}
+
+.animate-ring-pulse {
+  animation: ring-pulse 2.2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+.animate-dash-flow {
+  animation: dash-flow 1.4s linear infinite;
+}
+
+/* Location Node SVG Button styling:
+   We do NOT use CSS transform on the SVG group because it overrides SVG translate().
+   Instead, we style the circle, filters, and interactive feedback cleanly. */
+.svg-location-node {
+  cursor: pointer;
+  outline: none;
+}
+
+.svg-location-node .node-base-circle {
+  transition: r 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), stroke-width 0.18s ease, stroke 0.18s ease, fill 0.18s ease, filter 0.2s ease;
+}
+
+.svg-location-node:hover .node-base-circle {
+  filter: drop-shadow(0 0 10px rgba(56, 189, 248, 0.65));
+}
+
+.svg-location-node:focus-visible .node-base-circle {
+  stroke: #38bdf8;
+  stroke-width: 3.5px;
+}
+
+.svg-location-node:active .node-base-circle {
+  filter: drop-shadow(0 0 4px rgba(56, 189, 248, 0.4));
+}

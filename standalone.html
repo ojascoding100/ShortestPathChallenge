@@ -1,0 +1,899 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>The Food Delivery Routing Challenge</title>
+  <style>
+    :root {
+      --bg: #070b14;
+      --card-bg: #0f172a;
+      --card-border: #1e293b;
+      --text: #f1f5f9;
+      --text-muted: #94a3b8;
+      --accent: #f59e0b;
+      --cyan: #06b6d4;
+      --emerald: #10b981;
+      --sky: #38bdf8;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+
+    body {
+      background-color: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    header {
+      background: #090e17;
+      border-bottom: 1px solid var(--card-border);
+      padding: 10px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .brand h1 {
+      font-size: 15px;
+      font-weight: 700;
+      line-height: 1.2;
+    }
+
+    .timers-hud {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      padding: 6px 14px;
+      border-radius: 10px;
+    }
+
+    .timer-block {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .timer-label {
+      font-size: 9px;
+      text-transform: uppercase;
+      font-weight: 700;
+      color: var(--text-muted);
+      letter-spacing: 0.05em;
+    }
+
+    .timer-val {
+      font-size: 17px;
+      font-weight: 800;
+      font-variant-numeric: tabular-nums;
+      line-height: 1;
+    }
+
+    .timer-val.current {
+      color: var(--emerald);
+    }
+
+    .timer-val.target {
+      color: var(--cyan);
+    }
+
+    .timer-divider {
+      width: 1px;
+      height: 24px;
+      background: var(--card-border);
+    }
+
+    .actions {
+      display: flex;
+      gap: 6px;
+    }
+
+    .btn {
+      background: var(--card-bg);
+      color: var(--text);
+      border: 1px solid var(--card-border);
+      padding: 6px 12px;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      transition: all 0.15s ease;
+    }
+
+    .btn:hover {
+      background: #1e293b;
+      border-color: #334155;
+    }
+
+    .btn-accent {
+      background: #78350f;
+      border-color: var(--accent);
+      color: #fef3c7;
+    }
+
+    main {
+      flex: 1;
+      max-width: 1140px;
+      width: 100%;
+      margin: 0 auto;
+      padding: 16px;
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 16px;
+    }
+
+    @media (min-width: 900px) {
+      main {
+        grid-template-columns: 8fr 4fr;
+      }
+    }
+
+    .map-box {
+      background: #090d16;
+      border: 1px solid var(--card-border);
+      border-radius: 16px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .solution-banner {
+      background: rgba(16, 185, 129, 0.18);
+      border-bottom: 1px solid rgba(16, 185, 129, 0.4);
+      padding: 8px 14px;
+      font-size: 11px;
+      color: #a7f3d0;
+      display: none;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .hint-alert {
+      background: rgba(245, 158, 11, 0.15);
+      border-bottom: 1px solid rgba(245, 158, 11, 0.35);
+      padding: 8px 14px;
+      font-size: 12px;
+      color: #fde68a;
+      display: none;
+    }
+
+    .map-svg-wrap {
+      width: 100%;
+      padding: 8px;
+      display: flex;
+      justify-content: center;
+    }
+
+    svg {
+      width: 100%;
+      height: auto;
+      max-height: 480px;
+    }
+
+    .edge-base {
+      stroke: #1e293b;
+      stroke-width: 4.5;
+      stroke-linecap: round;
+    }
+
+    .edge-traveled {
+      stroke: var(--cyan);
+      stroke-width: 7;
+      stroke-linecap: round;
+    }
+
+    .edge-available {
+      stroke: var(--accent);
+      stroke-width: 5.5;
+      stroke-linecap: round;
+      stroke-dasharray: 8 8;
+      animation: dash 1.4s linear infinite;
+    }
+
+    .edge-shortest {
+      stroke: var(--emerald);
+      stroke-width: 7.5;
+      stroke-linecap: round;
+    }
+
+    @keyframes dash {
+      to { stroke-dashoffset: -24; }
+    }
+
+    .node-base-circle {
+      transition: r 0.2s cubic-bezier(0.4, 0, 0.2, 1), stroke 0.2s ease, fill 0.2s ease;
+      cursor: pointer;
+    }
+
+    .node-base-circle:hover {
+      r: 33px;
+    }
+
+    .dashboard {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      padding: 14px;
+    }
+
+    .card h2 {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-muted);
+      margin-bottom: 10px;
+    }
+
+    .mobile-target-banner {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      background: linear-gradient(90deg, #090e17 0%, rgba(12, 74, 110, 0.25) 50%, #090e17 100%);
+      border: 1px solid rgba(56, 189, 248, 0.4);
+      border-radius: 12px;
+      padding: 10px 12px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+    }
+
+    @media (min-width: 900px) {
+      .mobile-target-banner {
+        display: none !important;
+      }
+    }
+
+    .history-list {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      max-height: 160px;
+      overflow-y: auto;
+      font-size: 11px;
+    }
+
+    .history-row {
+      display: flex;
+      justify-content: space-between;
+      background: #090e17;
+      padding: 6px 10px;
+      border-radius: 6px;
+      border: 1px solid #1e293b;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.85);
+      backdrop-filter: blur(4px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      z-index: 200;
+    }
+
+    .modal-box {
+      background: var(--card-bg);
+      border: 1px solid #334155;
+      border-radius: 16px;
+      max-width: 480px;
+      width: 100%;
+      padding: 22px;
+      text-align: center;
+    }
+
+    .modal-eval {
+      padding: 10px;
+      border-radius: 8px;
+      margin: 10px 0;
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .modal-eval.optimal {
+      background: rgba(16, 185, 129, 0.2);
+      border: 1px solid rgba(16, 185, 129, 0.5);
+      color: #a7f3d0;
+    }
+
+    .modal-eval.suboptimal {
+      background: rgba(245, 158, 11, 0.2);
+      border: 1px solid rgba(245, 158, 11, 0.5);
+      color: #fde68a;
+    }
+
+    select {
+      background: #090e17;
+      color: #f1f5f9;
+      border: 1px solid #334155;
+      border-radius: 6px;
+      padding: 4px 8px;
+      font-size: 12px;
+      outline: none;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="brand">
+      <span style="font-size: 18px;">🚚</span>
+      <h1>Food Delivery Routing</h1>
+    </div>
+
+    {/* TWO TIMERS HUD */}
+    <div class="timers-hud">
+      <div class="timer-block">
+        <div>
+          <div class="timer-label">Current Path</div>
+          <div><strong id="display-time" class="timer-val current">0</strong> <span style="font-size: 10px; color: #64748b;">mins</span></div>
+        </div>
+      </div>
+
+      <div class="timer-divider"></div>
+
+      <div class="timer-block">
+        <div>
+          <div class="timer-label">Shortest Target</div>
+          <div><strong id="display-par" class="timer-val target">26</strong> <span style="font-size: 10px; color: #64748b;">mins</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="actions">
+      <button class="btn" onclick="toggleHint()">💡 Hint</button>
+      <button class="btn" onclick="undoMove()">↩ Undo</button>
+      <button class="btn btn-accent" onclick="resetGame()">↻ Reset</button>
+    </div>
+  </header>
+
+  <main>
+    <!-- Mobile Target Destination Banner -->
+    <div id="mobile-target-banner" class="mobile-target-banner">
+      <div style="display: flex; justify-content: space-between; align-items: center;">
+        <span id="mobile-banner-tag" style="font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; color: #38bdf8; display: flex; align-items: center; gap: 4px;">
+          🎯 Active Target Destination
+        </span>
+        <span id="mobile-banner-badge" style="font-size: 10px; font-weight: bold; padding: 2px 7px; border-radius: 9999px; background: rgba(56, 189, 248, 0.2); color: #7dd3fc; border: 1px solid rgba(56, 189, 248, 0.3);">
+          0/1 In Transit
+        </span>
+      </div>
+      <div style="background: rgba(9, 14, 23, 0.7); border: 1px solid #1e293b; border-radius: 8px; padding: 8px 10px; display: flex; justify-content: space-between; align-items: center; gap: 8px;">
+        <div style="display: flex; align-items: center; gap: 8px; min-width: 0;">
+          <span id="mobile-banner-emoji" style="font-size: 22px;">💻</span>
+          <div style="min-width: 0;">
+            <div id="mobile-banner-name" style="font-weight: bold; font-size: 13px; color: #ffffff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">CS Building</div>
+            <div id="mobile-banner-desc" style="font-size: 11px; color: #94a3b8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Boba Milk Tea & Pepperoni Pizza</div>
+          </div>
+        </div>
+        <button class="btn" onclick="viewSolution()" style="font-size: 10px; padding: 4px 8px; border-color: rgba(56, 189, 248, 0.4); color: #38bdf8; white-space: nowrap; shrink: 0;">
+          Par: <span id="mobile-banner-par">26</span>m
+        </button>
+      </div>
+      <div style="display: flex; justify-content: space-between; align-items: center; font-size: 10px; color: #94a3b8; border-top: 1px solid rgba(30, 41, 59, 0.6); padding-top: 4px; margin-top: 2px;">
+        <span id="mobile-banner-leg">Path: <strong style="color: #38bdf8;">1. Deliver to Target</strong> ➔ 2. Food Truck</span>
+        <span>At: <strong id="mobile-banner-current" style="color: #f59e0b;">Food Truck</strong></span>
+      </div>
+    </div>
+
+    <!-- Map Side -->
+    <div class="map-box">
+      <div id="solution-banner" class="solution-banner">
+        <span id="solution-text">🏆 <strong>Optimal Route:</strong></span>
+        <button class="btn" style="padding: 2px 8px; font-size: 10px;" onclick="closeSolution()">Close</button>
+      </div>
+
+      <div id="hint-banner" class="hint-alert">
+        💡 <strong>Hint:</strong> <span id="hint-text">Choose a connected building.</span>
+      </div>
+
+      <div class="map-svg-wrap">
+        <svg viewBox="0 0 920 530" id="map-svg">
+          <!-- Populated by JS -->
+        </svg>
+      </div>
+    </div>
+
+    <!-- Simple Dashboard Side -->
+    <div class="dashboard">
+      <!-- Active Delivery Order -->
+      <div class="card">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+          <h2>Active Delivery Order</h2>
+          <span id="delivery-status-badge" style="font-size: 10px; font-weight: bold; padding: 2px 6px; border-radius: 4px; background: rgba(56, 189, 248, 0.2); color: #7dd3fc;">0/1 In Transit</span>
+        </div>
+        <div style="background: #090e17; border: 1px solid #1e293b; border-radius: 8px; padding: 10px; display: flex; align-items: center; gap: 10px;">
+          <span id="order-emoji" style="font-size: 24px;">💻</span>
+          <div>
+            <div id="order-name" style="font-weight: bold; font-size: 13px;">CS Building</div>
+            <div id="order-desc" style="font-size: 11px; color: #94a3b8;">Boba Milk Tea & Pepperoni Pizza</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Route Progress -->
+      <div class="card">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+          <h2>Route History</h2>
+          <button class="btn" style="padding: 2px 6px; font-size: 10px; color: var(--emerald);" onclick="viewSolution()">Show Optimal</button>
+        </div>
+        <div id="history-container" class="history-list">
+          <div style="color: var(--text-muted); font-style: italic;">No moves yet. Click a connected building to start.</div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Win Modal with Two Timers & Shortest Path -->
+  <div id="win-modal" class="modal-overlay">
+    <div class="modal-box">
+      <div style="font-size: 32px; margin-bottom: 6px;">🏁</div>
+      <h3 style="font-size: 18px; font-weight: 800; margin-bottom: 8px;">Delivery Complete!</h3>
+      <div id="modal-evaluation" class="modal-eval"></div>
+      
+      <div style="display: flex; justify-content: center; gap: 16px; font-size: 13px; color: var(--text-muted); margin-bottom: 12px;">
+        <span>Current Path: <strong id="modal-time" style="color: white;"></strong>m</span>
+        <span>Shortest Target: <strong id="modal-target" style="color: var(--cyan);"></strong>m</span>
+      </div>
+
+      <div id="modal-path-box" style="background: rgba(16, 185, 129, 0.12); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 10px; padding: 10px; text-align: left; font-size: 11px; margin-bottom: 14px;">
+        <strong id="modal-route-title" style="color: #6ee7b7; display: block; font-size: 11px; margin-bottom: 4px;"></strong>
+        <div id="modal-route-steps" style="color: #e2e8f0; line-height: 1.5;"></div>
+      </div>
+
+      <div style="display: flex; gap: 8px;">
+        <button class="btn btn-accent" style="flex: 1; padding: 8px; justify-content: center;" onclick="resetGame(); closeModal();">
+          ↻ Retry This Location
+        </button>
+        <button class="btn" style="flex: 1; padding: 8px; justify-content: center; background: #064e3b; border-color: #10b981; color: #6ee7b7;" onclick="nextOrder(); closeModal();">
+          ✨ Next Delivery Order
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const NODES = {
+      food_truck: { id: 'food_truck', name: 'Food Truck', shortName: 'Food Truck', emoji: '🚚', x: 100, y: 270, desc: 'Kitchen Depot & Finish Hub' },
+      library: { id: 'library', name: 'Campus Library', shortName: 'Library', emoji: '📚', x: 280, y: 120, desc: 'Hot Espresso & Butter Croissant' },
+      science_center: { id: 'science_center', name: 'Science Labs', shortName: 'Science Labs', emoji: '🔬', x: 530, y: 100, desc: 'Energy Bento & Matcha Latte' },
+      observatory: { id: 'observatory', name: 'Observatory', shortName: 'Observatory', emoji: '🔭', x: 780, y: 110, desc: 'Stargazer Hot Cocoa & Bagel' },
+      student_union: { id: 'student_union', name: 'Student Union', shortName: 'Union', emoji: '☕', x: 330, y: 270, desc: 'Crispy Wrap & Fresh Lemonade' },
+      quad: { id: 'quad', name: 'Central Quad', shortName: 'The Quad', emoji: '🌳', x: 560, y: 260, desc: 'Acai Berry Bowl & Pretzel' },
+      cs_building: { id: 'cs_building', name: 'CS Building', shortName: 'CS Building', emoji: '💻', x: 800, y: 260, desc: 'Boba Milk Tea & Pepperoni Pizza' },
+      stadium: { id: 'stadium', name: 'Varsity Stadium', shortName: 'Stadium', emoji: '🏟️', x: 160, y: 440, desc: 'Loaded Stadium Nachos & Soda' },
+      gym: { id: 'gym', name: 'Recreation Gym', shortName: 'Gym', emoji: '🏋️', x: 390, y: 440, desc: 'Protein Shake & Energy Bar' },
+      dorms: { id: 'dorms', name: 'Campus Dorms', shortName: 'Dorms', emoji: '🏢', x: 670, y: 440, desc: 'Midnight Ramen Bowl & Dumplings' }
+    };
+
+    const EDGES = [
+      { id: 'ft-lib', from: 'food_truck', to: 'library', weight: 6 },
+      { id: 'ft-uni', from: 'food_truck', to: 'student_union', weight: 4 },
+      { id: 'ft-sta', from: 'food_truck', to: 'stadium', weight: 2 },
+      { id: 'lib-sci', from: 'library', to: 'science_center', weight: 5 },
+      { id: 'lib-uni', from: 'library', to: 'student_union', weight: 3 },
+      { id: 'sci-obs', from: 'science_center', to: 'observatory', weight: 7 },
+      { id: 'sci-qua', from: 'science_center', to: 'quad', weight: 4 },
+      { id: 'obs-csb', from: 'observatory', to: 'cs_building', weight: 3 },
+      { id: 'uni-qua', from: 'student_union', to: 'quad', weight: 5 },
+      { id: 'uni-gym', from: 'student_union', to: 'gym', weight: 3 },
+      { id: 'qua-csb', from: 'quad', to: 'cs_building', weight: 6 },
+      { id: 'qua-dor', from: 'quad', to: 'dorms', weight: 4 },
+      { id: 'sta-gym', from: 'stadium', to: 'gym', weight: 8 },
+      { id: 'gym-dor', from: 'gym', to: 'dorms', weight: 6 },
+      { id: 'dor-csb', from: 'dorms', to: 'cs_building', weight: 3 }
+    ];
+
+    const TARGET_OPTIONS = ['cs_building', 'science_center', 'observatory', 'dorms', 'student_union', 'library', 'gym', 'stadium', 'quad'];
+
+    let targetDestination = 'cs_building';
+    let currentNode = 'food_truck';
+    let totalTime = 0;
+    let hasDelivered = false;
+    let moveHistory = [];
+    let traveledEdges = [];
+    let hintVisible = false;
+    let showingSolution = false;
+
+    function getEdge(from, to) {
+      return EDGES.find(e => (e.from === from && e.to === to) || (e.from === to && e.to === from));
+    }
+
+    function dijkstra(start, target) {
+      const dist = {};
+      const prev = {};
+      const unvisited = new Set(Object.keys(NODES));
+      Object.keys(NODES).forEach(n => dist[n] = Infinity);
+      dist[start] = 0;
+
+      while (unvisited.size > 0) {
+        let curr = null;
+        let minD = Infinity;
+        unvisited.forEach(n => {
+          if (dist[n] < minD) { minD = dist[n]; curr = n; }
+        });
+        if (!curr || minD === Infinity || curr === target) break;
+        unvisited.delete(curr);
+
+        EDGES.forEach(e => {
+          let neighbor = null;
+          if (e.from === curr) neighbor = e.to;
+          else if (e.to === curr) neighbor = e.from;
+          if (neighbor && unvisited.has(neighbor)) {
+            const alt = dist[curr] + e.weight;
+            if (alt < dist[neighbor]) {
+              dist[neighbor] = alt;
+              prev[neighbor] = curr;
+            }
+          }
+        });
+      }
+
+      const path = [];
+      let step = target;
+      while (step) {
+        path.unshift(step);
+        if (step === start) break;
+        step = prev[step];
+      }
+
+      const edgeIds = [];
+      for (let i = 0; i < path.length - 1; i++) {
+        const edge = getEdge(path[i], path[i+1]);
+        if (edge) edgeIds.push(edge.id);
+      }
+
+      return { path, distance: dist[target], edgeIds };
+    }
+
+    function getOptimalRoundTrip(target) {
+      const out = dijkstra('food_truck', target);
+      const back = dijkstra(target, 'food_truck');
+      return {
+        totalTime: out.distance + back.distance,
+        fullPath: [...out.path, ...back.path.slice(1)],
+        allEdgeIds: Array.from(new Set([...out.edgeIds, ...back.edgeIds])),
+        out,
+        back
+      };
+    }
+
+    function getValidNeighbors(nodeId) {
+      const neighbors = [];
+      EDGES.forEach(e => {
+        if (e.from === nodeId) neighbors.push({ id: e.to, weight: e.weight, edgeId: e.id });
+        else if (e.to === nodeId) neighbors.push({ id: e.from, weight: e.weight, edgeId: e.id });
+      });
+      return neighbors;
+    }
+
+    function renderMap() {
+      const svg = document.getElementById('map-svg');
+      const validNeighbors = getValidNeighbors(currentNode).map(n => n.id);
+      const optimal = getOptimalRoundTrip(targetDestination);
+
+      let html = '<rect width="920" height="530" fill="#090d16" rx="12"/>';
+
+      EDGES.forEach(edge => {
+        const from = NODES[edge.from];
+        const to = NODES[edge.to];
+        const isTraveled = traveledEdges.includes(edge.id);
+        const isShortest = showingSolution && optimal.allEdgeIds.includes(edge.id);
+        const isAvailable = !showingSolution && ((edge.from === currentNode && validNeighbors.includes(edge.to)) ||
+                            (edge.to === currentNode && validNeighbors.includes(edge.from)));
+
+        let edgeClass = 'edge-base';
+        if (isShortest) edgeClass = 'edge-shortest';
+        else if (isTraveled) edgeClass = 'edge-traveled';
+        else if (isAvailable) edgeClass = 'edge-available';
+
+        html += `<line x1="${from.x}" y1="${from.y}" x2="${to.x}" y2="${to.y}" class="${edgeClass}"/>`;
+
+        const midX = (from.x + to.x) / 2;
+        const midY = (from.y + to.y) / 2;
+        html += `
+          <g transform="translate(${midX}, ${midY})">
+            <rect x="-24" y="-14" width="48" height="28" rx="14" fill="#0b1329" stroke="${isShortest ? '#10b981' : isTraveled ? '#06b6d4' : isAvailable ? '#f59e0b' : '#334155'}" stroke-width="1.8"/>
+            <text x="0" y="5" text-anchor="middle" fill="${isShortest ? '#a7f3d0' : isTraveled ? '#67e8f9' : isAvailable ? '#fde68a' : '#cbd5e1'}" font-size="13" font-weight="800">${edge.weight}m</text>
+          </g>
+        `;
+      });
+
+      Object.values(NODES).forEach(node => {
+        const isCurrent = node.id === currentNode;
+        const isTarget = node.id === targetDestination;
+        const isValid = !showingSolution && validNeighbors.includes(node.id);
+
+        let circleFill = isCurrent ? '#1e293b' : isTarget && hasDelivered ? '#064e3b' : isTarget ? '#0c4a6e' : '#0f172a';
+        let circleStroke = isCurrent ? '#f59e0b' : isTarget && hasDelivered ? '#10b981' : isTarget ? '#38bdf8' : isValid ? '#0284c7' : '#334155';
+
+        let startMarkerHtml = '';
+        if (node.id === 'food_truck') {
+          if (hasDelivered && !isCurrent) {
+            startMarkerHtml = `
+              <g transform="translate(0, -38)">
+                <rect x="-48" y="-11" width="96" height="22" rx="11" fill="#b45309" stroke="#fde047" stroke-width="1.6"/>
+                <polygon points="-5,11 5,11 0,15" fill="#fde047"/>
+                <text x="0" y="4.5" text-anchor="middle" fill="#fef08a" font-size="10" font-weight="800">🏁 FINISH HERE</text>
+              </g>
+            `;
+          } else {
+            startMarkerHtml = `
+              <g transform="translate(0, -38)">
+                <rect x="-38" y="-11" width="76" height="22" rx="11" fill="#78350f" stroke="#f59e0b" stroke-width="1.6"/>
+                <polygon points="-5,11 5,11 0,15" fill="#f59e0b"/>
+                <text x="0" y="4.5" text-anchor="middle" fill="#fef3c7" font-size="10.5" font-weight="800">🚩 START</text>
+              </g>
+            `;
+          }
+        }
+
+        let targetBadgeHtml = '';
+        if (isTarget) {
+          if (hasDelivered) {
+            targetBadgeHtml = `
+              <g transform="translate(0, -38)">
+                <rect x="-38" y="-10" width="76" height="20" rx="10" fill="#065f46" stroke="#34d399" stroke-width="1.4"/>
+                <text x="0" y="4" text-anchor="middle" fill="#ecfdf5" font-size="9.5" font-weight="800">✓ DELIVERED</text>
+              </g>
+            `;
+          } else {
+            targetBadgeHtml = `
+              <g transform="translate(0, -38)">
+                <rect x="-45" y="-11" width="90" height="22" rx="11" fill="#0369a1" stroke="#38bdf8" stroke-width="1.6"/>
+                <polygon points="-5,11 5,11 0,15" fill="#38bdf8"/>
+                <text x="0" y="4.5" text-anchor="middle" fill="#f0f9ff" font-size="10" font-weight="800">🎯 DESTINATION</text>
+              </g>
+            `;
+          }
+        }
+
+        html += `
+          <g transform="translate(${node.x}, ${node.y})" onclick="handleNodeClick('${node.id}')" style="cursor: pointer;">
+            <circle cx="0" cy="0" r="46" fill="transparent"/>
+            ${isCurrent ? '<circle cx="0" cy="0" r="38" fill="none" stroke="#f59e0b" stroke-width="2.5" opacity="0.7"/>' : ''}
+            <circle cx="0" cy="0" r="${isCurrent ? 31 : 29}" fill="${circleFill}" stroke="${circleStroke}" stroke-width="${isCurrent || isTarget ? 3.5 : 2}" class="node-base-circle"/>
+            <text x="0" y="7" text-anchor="middle" font-size="22">${node.emoji}</text>
+            ${isCurrent ? '<g transform="translate(17, -17)"><circle r="11" fill="#f59e0b" stroke="#ffffff" stroke-width="1.6"/><text x="0" y="4" text-anchor="middle" font-size="10">🛵</text></g>' : ''}
+            ${startMarkerHtml}
+            ${targetBadgeHtml}
+            <g transform="translate(0, 42)">
+              <rect x="-52" y="-12" width="104" height="24" rx="8" fill="#070c18" stroke="${isCurrent ? '#f59e0b' : isTarget ? '#38bdf8' : '#1e293b'}" stroke-width="1.4"/>
+              <text x="0" y="5" text-anchor="middle" fill="${isCurrent ? '#fde68a' : isTarget ? '#bae6fd' : '#cbd5e1'}" font-size="12.5" font-weight="700">${node.shortName}</text>
+            </g>
+          </g>
+        `;
+      });
+
+      svg.innerHTML = html;
+    }
+
+    function handleNodeClick(nodeId) {
+      if (showingSolution) closeSolution();
+      if (nodeId === currentNode) return;
+
+      const validNeighbors = getValidNeighbors(currentNode);
+      const move = validNeighbors.find(n => n.id === nodeId);
+      if (!move) return;
+
+      totalTime += move.weight;
+      traveledEdges.push(move.edgeId);
+      const fromNode = currentNode;
+      currentNode = nodeId;
+
+      const reachedTarget = nodeId === targetDestination && !hasDelivered;
+      if (reachedTarget) hasDelivered = true;
+
+      moveHistory.push({ from: fromNode, to: nodeId, weight: move.weight, delivered: reachedTarget });
+
+      updateUI();
+
+      if (hasDelivered && currentNode === 'food_truck') {
+        setTimeout(showWinModal, 250);
+      }
+    }
+
+    function updateUI() {
+      document.getElementById('display-time').innerText = totalTime;
+      const optimal = getOptimalRoundTrip(targetDestination);
+      document.getElementById('display-par').innerText = optimal.totalTime;
+
+      const badge = document.getElementById('delivery-status-badge');
+      if (hasDelivered) {
+        badge.innerText = '✓ 1/1 Delivered';
+        badge.style.background = 'rgba(16, 185, 129, 0.2)';
+        badge.style.color = '#6ee7b7';
+      } else {
+        badge.innerText = '0/1 In Transit';
+        badge.style.background = 'rgba(56, 189, 248, 0.2)';
+        badge.style.color = '#7dd3fc';
+      }
+
+      // Update mobile target destination banner
+      const mEmoji = document.getElementById('mobile-banner-emoji');
+      const mName = document.getElementById('mobile-banner-name');
+      const mDesc = document.getElementById('mobile-banner-desc');
+      const mTag = document.getElementById('mobile-banner-tag');
+      const mBadge = document.getElementById('mobile-banner-badge');
+      const mLeg = document.getElementById('mobile-banner-leg');
+      const mCurrent = document.getElementById('mobile-banner-current');
+      const mPar = document.getElementById('mobile-banner-par');
+
+      if (mPar) mPar.innerText = optimal.totalTime;
+      if (mCurrent) mCurrent.innerText = NODES[currentNode].shortName;
+
+      if (hasDelivered) {
+        if (mEmoji) mEmoji.innerText = '🚚';
+        if (mName) mName.innerText = 'Return to Food Truck';
+        if (mDesc) mDesc.innerText = 'Order delivered to ' + NODES[targetDestination].name + '! Return to finish.';
+        if (mTag) {
+          mTag.innerHTML = '✓ Target Reached • Return Leg';
+          mTag.style.color = '#34d399';
+        }
+        if (mBadge) {
+          mBadge.innerText = '1/1 Delivered';
+          mBadge.style.background = 'rgba(16, 185, 129, 0.2)';
+          mBadge.style.color = '#6ee7b7';
+          mBadge.style.borderColor = 'rgba(16, 185, 129, 0.4)';
+        }
+        if (mLeg) {
+          mLeg.innerHTML = 'Path: <span style="text-decoration: line-through; color: #64748b;">1. ' + NODES[targetDestination].shortName + '</span> ➔ <strong style="color: #34d399;">2. Food Truck</strong>';
+        }
+      } else {
+        if (mEmoji) mEmoji.innerText = NODES[targetDestination].emoji;
+        if (mName) mName.innerText = NODES[targetDestination].name;
+        if (mDesc) mDesc.innerText = NODES[targetDestination].desc;
+        if (mTag) {
+          mTag.innerHTML = '🎯 Active Target Destination';
+          mTag.style.color = '#38bdf8';
+        }
+        if (mBadge) {
+          mBadge.innerText = '0/1 In Transit';
+          mBadge.style.background = 'rgba(56, 189, 248, 0.2)';
+          mBadge.style.color = '#7dd3fc';
+          mBadge.style.borderColor = 'rgba(56, 189, 248, 0.3)';
+        }
+        if (mLeg) {
+          mLeg.innerHTML = 'Path: <strong style="color: #38bdf8;">1. ' + NODES[targetDestination].shortName + '</strong> ➔ <span style="color: #64748b;">2. Food Truck</span>';
+        }
+      }
+
+      const histContainer = document.getElementById('history-container');
+      if (moveHistory.length === 0) {
+        histContainer.innerHTML = '<div style="color: var(--text-muted); font-style: italic;">No moves yet. Click a connected building to start.</div>';
+      } else {
+        histContainer.innerHTML = moveHistory.map((m, idx) => `
+          <div class="history-row">
+            <span>#${idx+1} ${NODES[m.from].shortName} ➔ ${NODES[m.to].shortName} ${m.delivered ? '<strong style="color: #6ee7b7;">(✓ Done)</strong>' : ''}</span>
+            <span style="color: var(--accent); font-weight: bold;">+${m.weight}m</span>
+          </div>
+        `).join('');
+      }
+
+      if (hintVisible) {
+        const nextHint = hasDelivered ? dijkstra(currentNode, 'food_truck') : dijkstra(currentNode, targetDestination);
+        const nextStep = nextHint.path[1] || 'food_truck';
+        document.getElementById('hint-text').innerText = hasDelivered
+          ? `Order delivered! Return to Food Truck via ${NODES[nextStep].shortName} (Shortest path: ${nextHint.distance}m remaining).`
+          : `Optimal route to ${NODES[targetDestination].shortName}: head to ${NODES[nextStep].shortName} (${nextHint.distance}m remaining).`;
+      }
+
+      renderMap();
+    }
+
+    function toggleHint() {
+      hintVisible = !hintVisible;
+      document.getElementById('hint-banner').style.display = hintVisible ? 'block' : 'none';
+      updateUI();
+    }
+
+    function undoMove() {
+      if (moveHistory.length === 0) return;
+      const last = moveHistory.pop();
+      totalTime = Math.max(0, totalTime - last.weight);
+      traveledEdges.pop();
+      currentNode = last.from;
+      if (last.delivered) hasDelivered = false;
+      updateUI();
+    }
+
+    function resetGame() {
+      currentNode = 'food_truck';
+      totalTime = 0;
+      hasDelivered = false;
+      moveHistory = [];
+      traveledEdges = [];
+      showingSolution = false;
+      document.getElementById('solution-banner').style.display = 'none';
+      updateUI();
+    }
+
+    function changeTarget(nodeId) {
+      targetDestination = nodeId;
+      const targetNode = NODES[nodeId];
+      document.getElementById('order-emoji').innerText = targetNode.emoji;
+      document.getElementById('order-name').innerText = targetNode.name;
+      document.getElementById('order-desc').innerText = targetNode.desc;
+      resetGame();
+    }
+
+    function nextOrder() {
+      const idx = TARGET_OPTIONS.indexOf(targetDestination);
+      const nextIdx = (idx + 1) % TARGET_OPTIONS.length;
+      changeTarget(TARGET_OPTIONS[nextIdx]);
+    }
+
+    function viewSolution() {
+      showingSolution = true;
+      const optimal = getOptimalRoundTrip(targetDestination);
+      document.getElementById('solution-banner').style.display = 'flex';
+      document.getElementById('solution-text').innerHTML = `🏆 <strong>Optimal Route (${optimal.totalTime} mins):</strong> ${optimal.fullPath.map(id => NODES[id].shortName).join(' ➔ ')}`;
+      renderMap();
+    }
+
+    function closeSolution() {
+      showingSolution = false;
+      document.getElementById('solution-banner').style.display = 'none';
+      renderMap();
+    }
+
+    function showWinModal() {
+      const optimal = getOptimalRoundTrip(targetDestination);
+      const isOpt = totalTime <= optimal.totalTime;
+
+      document.getElementById('modal-time').innerText = totalTime;
+      document.getElementById('modal-target').innerText = optimal.totalTime;
+
+      const evalBox = document.getElementById('modal-evaluation');
+      evalBox.className = `modal-eval ${isOpt ? 'optimal' : 'suboptimal'}`;
+      evalBox.innerText = isOpt
+        ? `🏆 Perfect! You achieved the shortest possible path (${optimal.totalTime} mins) to ${NODES[targetDestination].name} and back!`
+        : `You finished in ${totalTime} mins! The shortest path was ${optimal.totalTime} mins.`;
+
+      document.getElementById('modal-route-title').innerText = `Optimal Round-Trip Path: ${optimal.totalTime} Mins`;
+      document.getElementById('modal-route-steps').innerHTML = `
+        Outbound: ${optimal.out.path.map(id => NODES[id].shortName).join(' ➔ ')} (${optimal.out.distance}m)<br>
+        Return: ${optimal.back.path.map(id => NODES[id].shortName).join(' ➔ ')} (${optimal.back.distance}m)
+      `;
+
+      document.getElementById('win-modal').style.display = 'flex';
+    }
+
+    function closeModal() {
+      document.getElementById('win-modal').style.display = 'none';
+    }
+
+    // Init
+    changeTarget('cs_building');
+  </script>
+</body>
+</html>
