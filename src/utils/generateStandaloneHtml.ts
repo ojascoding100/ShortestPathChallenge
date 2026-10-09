@@ -482,16 +482,16 @@ export function buildStandaloneHtmlContent(): string {
 
   <script>
     const NODES = {
-      food_truck: { id: 'food_truck', name: 'Food Truck', shortName: 'Food Truck', emoji: '🚚', x: 90, y: 270, desc: 'Kitchen Depot & Finish Hub' },
-      library: { id: 'library', name: 'Campus Library', shortName: 'Library', emoji: '📚', x: 250, y: 110, desc: 'Hot Espresso & Butter Croissant' },
-      science_center: { id: 'science_center', name: 'Science Labs', shortName: 'Science Labs', emoji: '🔬', x: 490, y: 90, desc: 'Energy Bento & Matcha Latte' },
-      observatory: { id: 'observatory', name: 'Observatory', shortName: 'Observatory', emoji: '🔭', x: 770, y: 90, desc: 'Stargazer Hot Cocoa & Bagel' },
-      student_union: { id: 'student_union', name: 'Student Union', shortName: 'Union', emoji: '☕', x: 320, y: 310, desc: 'Crispy Wrap & Fresh Lemonade' },
-      quad: { id: 'quad', name: 'Central Quad', shortName: 'The Quad', emoji: '🌳', x: 550, y: 240, desc: 'Acai Berry Bowl & Pretzel' },
-      cs_building: { id: 'cs_building', name: 'CS Building', shortName: 'CS Building', emoji: '💻', x: 830, y: 280, desc: 'Boba Milk Tea & Pepperoni Pizza' },
-      stadium: { id: 'stadium', name: 'Varsity Stadium', shortName: 'Stadium', emoji: '🏟️', x: 150, y: 440, desc: 'Loaded Stadium Nachos & Soda' },
-      gym: { id: 'gym', name: 'Recreation Gym', shortName: 'Gym', emoji: '🏋️', x: 370, y: 460, desc: 'Protein Shake & Energy Bar' },
-      dorms: { id: 'dorms', name: 'Campus Dorms', shortName: 'Dorms', emoji: '🏢', x: 690, y: 430, desc: 'Midnight Ramen Bowl & Dumplings' }
+      food_truck: { id: 'food_truck', name: 'In Gate', shortName: 'In Gate', emoji: '🚪', x: 90, y: 270, desc: 'Campus Main Entrance' },
+      library: { id: 'library', name: 'Parking', shortName: 'Parking', emoji: '🅿️', x: 250, y: 110, desc: 'North Vehicle Parking' },
+      science_center: { id: 'science_center', name: 'Main Canteen', shortName: 'Main Canteen', emoji: '🍱', x: 490, y: 90, desc: 'Campus Food Hall' },
+      observatory: { id: 'observatory', name: 'Bakery', shortName: 'Bakery', emoji: '🥐', x: 770, y: 90, desc: 'Campus Patisserie & Oven' },
+      student_union: { id: 'student_union', name: 'Main Building', shortName: 'Main Bldg', emoji: '🏛️', x: 320, y: 310, desc: 'Academic Headquarters' },
+      quad: { id: 'quad', name: 'Boat Club', shortName: 'Boat Club', emoji: '⛵', x: 550, y: 240, desc: 'Waterside Rowing Club' },
+      cs_building: { id: 'cs_building', name: 'AI&DS Building', shortName: 'AI&DS Bldg', emoji: '💻', x: 830, y: 280, desc: 'Data Science Labs' },
+      stadium: { id: 'stadium', name: 'AI/ML Building', shortName: 'AI/ML Bldg', emoji: '🤖', x: 150, y: 440, desc: 'Machine Learning Wing' },
+      gym: { id: 'gym', name: 'Kiosk', shortName: 'Kiosk', emoji: '🏪', x: 370, y: 460, desc: 'Central Refreshment Kiosk' },
+      dorms: { id: 'dorms', name: 'Fruit Canteen', shortName: 'Fruit Canteen', emoji: '🍉', x: 690, y: 430, desc: 'Organic Fruit Station' }
     };
 
     const EDGES = [

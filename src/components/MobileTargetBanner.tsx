@@ -46,12 +46,12 @@ export const MobileTargetBanner: React.FC<MobileTargetBannerProps> = ({
           {hasDelivered ? (
             <span className="text-[10px] font-extrabold uppercase tracking-wider text-emerald-400 flex items-center gap-1">
               <CheckCircle2 className="w-3 h-3 text-emerald-400" />
-              <span>Target Reached • Return Leg</span>
+              <span>Auditorium Reached!</span>
             </span>
           ) : (
-            <span className="text-[10px] font-extrabold uppercase tracking-wider text-sky-400 flex items-center gap-1">
-              <Target className="w-3 h-3 text-sky-400" />
-              <span>Active Target Destination</span>
+            <span className="text-[10px] font-extrabold uppercase tracking-wider text-amber-400 flex items-center gap-1">
+              <Target className="w-3 h-3 text-amber-400" />
+              <span>Final Destination: Auditorium</span>
             </span>
           )}
         </div>
@@ -60,10 +60,10 @@ export const MobileTargetBanner: React.FC<MobileTargetBannerProps> = ({
           className={`text-[10px] font-bold px-2 py-0.5 rounded-full font-mono-tabular border ${
             hasDelivered
               ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
-              : 'bg-sky-500/20 text-sky-300 border-sky-500/30'
+              : 'bg-amber-500/20 text-amber-300 border-amber-500/30'
           }`}
         >
-          {hasDelivered ? '1/1 Delivered' : '0/1 In Transit'}
+          {hasDelivered ? 'Arrived!' : 'One-Way Journey'}
         </span>
       </div>
 
@@ -74,15 +74,15 @@ export const MobileTargetBanner: React.FC<MobileTargetBannerProps> = ({
             className={`w-9 h-9 sm:w-10 sm:h-10 rounded-lg flex items-center justify-center text-xl shrink-0 border ${
               hasDelivered
                 ? 'bg-emerald-500/15 border-emerald-500/30 text-emerald-300'
-                : 'bg-sky-500/15 border-sky-500/30 text-sky-300'
+                : 'bg-amber-500/15 border-amber-500/30 text-amber-300'
             }`}
           >
-            {hasDelivered ? '🚚' : targetNode.emoji}
+            {hasDelivered ? '🏆' : '🎭'}
           </div>
 
           <div className="min-w-0">
             <h2 className="text-xs sm:text-sm font-bold text-white flex items-center gap-1.5 truncate leading-tight">
-              <span>{hasDelivered ? 'Return to Food Truck' : targetNode.name}</span>
+              <span>Auditorium ({targetNode.name})</span>
             </h2>
           </div>
         </div>
@@ -91,7 +91,7 @@ export const MobileTargetBanner: React.FC<MobileTargetBannerProps> = ({
           <button
             onClick={onViewShortestPath}
             className="px-2 py-1 sm:px-2.5 sm:py-1.5 text-[10px] font-bold rounded-lg bg-slate-900 hover:bg-slate-800 text-cyan-300 border border-cyan-500/30 flex items-center gap-1 shrink-0 active:scale-95 transition-all cursor-pointer shadow-sm"
-            title="View optimal round-trip path on map"
+            title="View optimal path on map"
             aria-label="View optimal route"
           >
             <Route className="w-3 h-3 text-cyan-400" />
@@ -100,31 +100,19 @@ export const MobileTargetBanner: React.FC<MobileTargetBannerProps> = ({
         )}
       </div>
 
-      {/* Round-Trip Progress Tracker */}
+      {/* Journey Tracker */}
       <div className="mt-2 pt-1.5 border-t border-slate-800/60 flex items-center justify-between text-[10px] sm:text-[11px] gap-2">
         <div className="flex items-center gap-1 truncate">
           <span className="text-slate-500 text-[9px] font-bold uppercase shrink-0">Path:</span>
           
-          <span
-            className={`px-1.5 py-0.5 rounded font-semibold truncate ${
-              !hasDelivered
-                ? 'bg-sky-500/20 text-sky-300 border border-sky-500/30 font-bold'
-                : 'text-slate-500 line-through'
-            }`}
-          >
-            1. {targetNode.shortName}
+          <span className="px-1.5 py-0.5 rounded font-semibold text-emerald-400 bg-emerald-500/15 border border-emerald-500/30">
+            🚪 In Gate
           </span>
 
           <ArrowRight className="w-2.5 h-2.5 text-slate-600 shrink-0" />
 
-          <span
-            className={`px-1.5 py-0.5 rounded font-semibold truncate ${
-              hasDelivered
-                ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-bold'
-                : 'text-slate-500'
-            }`}
-          >
-            2. Food Truck
+          <span className="px-1.5 py-0.5 rounded font-semibold text-amber-400 bg-amber-500/15 border border-amber-500/30 font-bold">
+            🎭 Auditorium
           </span>
         </div>
 

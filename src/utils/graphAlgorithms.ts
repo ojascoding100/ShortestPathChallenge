@@ -103,6 +103,55 @@ export function findShortestPath(
   };
 }
 
+export interface OneWayResult {
+  path: NodeId[];
+  distance: number;
+  totalTime: number;
+  allEdgeIds: string[];
+  steps: {
+    from: NodeId;
+    to: NodeId;
+    weight: number;
+    description: string;
+    isTargetVisit?: boolean;
+  }[];
+}
+
+/**
+ * Computes optimal one-way journey: Start Point (In Gate) -> Destination (Auditorium)
+ */
+export function findOneWayShortestPath(
+  start: NodeId,
+  target: NodeId
+): OneWayResult {
+  const result = findShortestPath(start, target);
+  const steps: OneWayResult['steps'] = [];
+
+  for (let i = 0; i < result.path.length - 1; i++) {
+    const from = result.path[i];
+    const to = result.path[i + 1];
+    const edge = getEdge(from, to);
+    const isTarget = to === target;
+    steps.push({
+      from,
+      to,
+      weight: edge?.weight ?? 0,
+      isTargetVisit: isTarget,
+      description: isTarget
+        ? `Arrive at ${INITIAL_NODES[to].name} (Auditorium Final Destination)`
+        : `Travel toward ${INITIAL_NODES[to].shortName}`,
+    });
+  }
+
+  return {
+    path: result.path,
+    distance: result.distance,
+    totalTime: result.distance,
+    allEdgeIds: result.edgeIds,
+    steps,
+  };
+}
+
 export interface RoundTripResult {
   outbound: ShortestPathResult;
   inbound: ShortestPathResult;
@@ -149,7 +198,7 @@ export function findRoundTripShortestPath(
       phase: 'outbound',
       isTargetVisit: isTarget,
       description: isTarget
-        ? `Deliver food to ${INITIAL_NODES[to].name}`
+        ? `Arrive at ${INITIAL_NODES[to].name} (Auditorium)`
         : `Travel toward ${INITIAL_NODES[to].shortName}`,
     });
   }
@@ -167,7 +216,7 @@ export function findRoundTripShortestPath(
       phase: 'inbound',
       isFinishDepot: isFinish,
       description: isFinish
-        ? `Return to ${INITIAL_NODES[to].name} (Finish Depot)`
+        ? `Return to ${INITIAL_NODES[to].name} (Start Gate)`
         : `Return route via ${INITIAL_NODES[to].shortName}`,
     });
   }
@@ -194,27 +243,27 @@ export interface RouteComparison {
 
 export const PRESET_ROUTES: RouteComparison[] = [
   {
-    title: 'Optimal CS Building Delivery',
-    badge: 'Shortest Round Trip: 24 mins',
-    totalTime: 24,
+    title: 'Optimal AI&DS Building Route',
+    badge: 'Shortest One-Way Path: 12 mins',
+    totalTime: 12,
     isOptimal: true,
-    description: 'Travels from Food Truck via Stadium (3m), Gym (2m), Quad (3m), Dorms (2m), and CS Building (2m) for 12 mins outbound and 12 mins return. Avoids the congested 20-minute straight central corridor!',
-    path: ['food_truck', 'stadium', 'gym', 'quad', 'dorms', 'cs_building', 'dorms', 'quad', 'gym', 'stadium', 'food_truck'],
+    description: 'Travels from In Gate via AI/ML Building (3m), Kiosk (2m), Boat Club (3m), Fruit Canteen (2m), and AI&DS Building (2m) for 12 mins. Avoids the congested 20-minute straight central corridor!',
+    path: ['food_truck', 'stadium', 'gym', 'quad', 'dorms', 'cs_building'],
   },
   {
     title: 'Straight Central Highway Trap',
-    badge: 'Extended Path: 40 mins',
-    totalTime: 40,
+    badge: 'Extended Path: 20 mins',
+    totalTime: 20,
     isGreedyTrap: true,
-    description: 'Plowing straight across the central walkway (Food Truck -> Union -> Quad -> CS) encounters the crowded plaza (8m) and tech mall construction (7m), inflating round-trip to 40 mins (+16 mins longer)!',
-    path: ['food_truck', 'student_union', 'quad', 'cs_building', 'quad', 'student_union', 'food_truck'],
+    description: 'Plowing straight across the central walkway (In Gate -> Main Building -> Boat Club -> AI&DS Bldg) encounters the crowded plaza (8m) and tech mall construction (7m), inflating one-way trip to 20 mins (+8 mins longer)!',
+    path: ['food_truck', 'student_union', 'quad', 'cs_building'],
   },
   {
-    title: 'Science Labs Smart Loop',
-    badge: 'Shortest Round Trip: 20 mins',
-    totalTime: 20,
+    title: 'Main Canteen Smart Loop',
+    badge: 'Shortest One-Way Path: 10 mins',
+    totalTime: 10,
     isOptimal: true,
-    description: 'Outbound via Stadium (3m), Gym (2m), and Quad (3m) to Science Labs (2m) takes 10 mins (20m round-trip), beating the slow 11-minute direct north avenue via Library (7m cobblestone road).',
-    path: ['food_truck', 'stadium', 'gym', 'quad', 'science_center', 'quad', 'gym', 'stadium', 'food_truck'],
+    description: 'From In Gate via AI/ML Bldg (3m), Kiosk (2m), and Boat Club (3m) to Main Canteen (2m) takes 10 mins, beating the slow 11-minute direct north avenue via Parking (7m slow walkway).',
+    path: ['food_truck', 'stadium', 'gym', 'quad', 'science_center'],
   },
 ];

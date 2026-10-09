@@ -1,5 +1,5 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
-import { ZoomIn, ZoomOut, Maximize2, LocateFixed, Route } from 'lucide-react';
+import { ZoomIn, ZoomOut, Maximize2, LocateFixed } from 'lucide-react';
 import { GraphEdge, GraphNode, NodeId } from '../types/graph';
 import { HintData } from '../utils/hintEngine';
 import { sounds } from '../utils/audio';
@@ -17,8 +17,8 @@ interface MapViewProps {
   hintData: HintData | null;
   isHintActive: boolean;
   onDismissHint?: () => void;
-  showShortestPathOverlay: boolean;
-  onCloseShortestPathOverlay: () => void;
+  showShortestPathOverlay?: boolean;
+  onCloseShortestPathOverlay?: () => void;
   optimalRouteResult: RoundTripResult;
 }
 
@@ -34,7 +34,7 @@ export const MapView: React.FC<MapViewProps> = ({
   hintData,
   isHintActive,
   onDismissHint,
-  showShortestPathOverlay,
+  showShortestPathOverlay = false,
   onCloseShortestPathOverlay,
   optimalRouteResult,
 }) => {
@@ -293,11 +293,11 @@ export const MapView: React.FC<MapViewProps> = ({
   const handlePointerDown = (e: React.PointerEvent) => {
     if (e.pointerType === 'touch') return;
     if (zoomLevel <= 1) return;
+    // Don't capture pointer immediately - only track coordinates so clicks on nodes are not suppressed
     isDraggingRef.current = true;
     hasMovedRef.current = false;
     dragStartRef.current = { x: e.clientX, y: e.clientY };
     panStartRef.current = { ...panOffset };
-    (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
   };
 
   const handlePointerMove = (e: React.PointerEvent) => {
@@ -306,19 +306,27 @@ export const MapView: React.FC<MapViewProps> = ({
     const dx = e.clientX - dragStartRef.current.x;
     const dy = e.clientY - dragStartRef.current.y;
 
-    if (Math.hypot(dx, dy) > 6) {
-      hasMovedRef.current = true;
-    }
+    // Only initiate pan and pointer capture if movement exceeds threshold
+    if (Math.hypot(dx, dy) > 5) {
+      if (!hasMovedRef.current) {
+        hasMovedRef.current = true;
+        try {
+          (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+        } catch {
+          // Ignore if pointer capture fails
+        }
+      }
 
-    if (svgContainerRef.current) {
-      const rect = svgContainerRef.current.getBoundingClientRect();
-      const scaleX = currentWidth / rect.width;
-      const scaleY = currentHeight / rect.height;
+      if (svgContainerRef.current) {
+        const rect = svgContainerRef.current.getBoundingClientRect();
+        const scaleX = currentWidth / rect.width;
+        const scaleY = currentHeight / rect.height;
 
-      setPanOffset({
-        x: panStartRef.current.x - dx * scaleX,
-        y: panStartRef.current.y - dy * scaleY,
-      });
+        setPanOffset({
+          x: panStartRef.current.x - dx * scaleX,
+          y: panStartRef.current.y - dy * scaleY,
+        });
+      }
     }
   };
 
@@ -327,14 +335,16 @@ export const MapView: React.FC<MapViewProps> = ({
     if (isDraggingRef.current) {
       isDraggingRef.current = false;
       try {
-        (e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId);
+        if ((e.currentTarget as HTMLElement).hasPointerCapture(e.pointerId)) {
+          (e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId);
+        }
       } catch {
-        // Ignored if pointer capture was already released
+        // Ignored
       }
       if (hasMovedRef.current) {
         setTimeout(() => {
           hasMovedRef.current = false;
-        }, 120);
+        }, 100);
       }
     }
   };
@@ -346,9 +356,6 @@ export const MapView: React.FC<MapViewProps> = ({
       return;
     }
 
-    if (showShortestPathOverlay) {
-      onCloseShortestPathOverlay();
-    }
     if (nodeId === currentNodeId) return;
 
     if (validTargetIds.includes(nodeId)) {
@@ -362,46 +369,11 @@ export const MapView: React.FC<MapViewProps> = ({
   const currentNode = nodes[currentNodeId];
 
   return (
-    <div className="relative w-full flex flex-col bg-slate-950 rounded-2xl border border-slate-800 shadow-xl overflow-hidden select-none">
-      
-      {/* Top Banner: Hint or Shortest Route notification */}
-      {isHintActive && hintData && (
-        <div className="bg-amber-950/70 border-b border-amber-500/30 px-3.5 py-1.5 text-xs text-amber-200 flex items-center justify-between z-10 gap-2">
-          <p className="leading-snug flex items-center gap-1.5 min-w-0">
-            <span className="text-amber-400 font-bold shrink-0">💡 Hint (1/1):</span>
-            <span className="truncate sm:whitespace-normal">{hintData.clue}</span>
-          </p>
-          {onDismissHint && (
-            <button
-              onClick={onDismissHint}
-              className="text-amber-400/80 hover:text-amber-200 text-[11px] font-semibold px-2 py-0.5 rounded hover:bg-amber-900/40 shrink-0 cursor-pointer transition-colors"
-              title="Close hint banner"
-            >
-              Dismiss
-            </button>
-          )}
-        </div>
-      )}
-
-      {showShortestPathOverlay && (
-        <div className="bg-emerald-950/80 border-b border-emerald-500/40 px-3.5 py-2 text-xs text-emerald-200 flex items-center justify-between z-10">
-          <span className="truncate mr-2 font-medium">
-            🏆 <strong>Optimal Round-Trip ({optimalRouteResult.totalTime}m):</strong>{' '}
-            {optimalRouteResult.fullPath.map((id) => nodes[id]?.shortName).join(' ➔ ')}
-          </span>
-          <button
-            onClick={onCloseShortestPathOverlay}
-            className="px-2.5 py-1 rounded bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs cursor-pointer shrink-0 transition-colors"
-          >
-            Close
-          </button>
-        </div>
-      )}
-
+    <div className="relative w-full h-full flex-1 min-h-0 flex flex-col bg-slate-950 rounded-xl border border-slate-800 shadow-xl overflow-hidden select-none">
       {/* Map Status & Zoom Controls Bar */}
-      <div className="bg-slate-900/90 border-b border-slate-800/80 px-2.5 sm:px-3 py-1.5 sm:py-2 flex items-center justify-between gap-2 z-10 overflow-hidden">
+      <div className="bg-slate-900/90 border-b border-slate-800/80 px-2.5 sm:px-3 py-1 sm:py-1.5 flex items-center justify-between gap-2 z-10 shrink-0 overflow-hidden">
         
-        {/* Mobile-Friendly Mission Status Strip */}
+        {/* Mission Status Strip */}
         <div className="min-w-0 flex-1 flex items-center gap-1.5 sm:gap-2 text-xs overflow-hidden">
           <div className="flex items-center gap-1 font-bold text-amber-400 shrink-0">
             <span>🛵</span>
@@ -415,11 +387,11 @@ export const MapView: React.FC<MapViewProps> = ({
             {hasDelivered ? (
               <span className="text-emerald-400 font-bold flex items-center gap-1 min-w-0 truncate">
                 <span className="shrink-0">🏁</span>
-                <span className="truncate">Return to Food Truck</span>
+                <span className="truncate">Reached Auditorium!</span>
               </span>
             ) : (
               <span className="text-sky-300 font-bold flex items-center gap-1 min-w-0 truncate">
-                <span className="shrink-0">🎯</span>
+                <span className="shrink-0">🎭</span>
                 <span className="hidden xs:inline text-slate-400 font-normal">Goal:</span>
                 <span className="truncate">{targetNode?.name}</span>
               </span>
@@ -486,7 +458,7 @@ export const MapView: React.FC<MapViewProps> = ({
         onPointerUp={handlePointerUp}
         onPointerCancel={handlePointerUp}
         style={{ touchAction: 'none' }}
-        className={`relative w-full flex items-center justify-center p-1 sm:p-3 overflow-hidden touch-none select-none ${
+        className={`relative w-full flex-1 min-h-0 flex items-center justify-center p-1 sm:p-2 overflow-hidden touch-none select-none ${
           zoomLevel > 1 ? 'cursor-grab active:cursor-grabbing' : ''
         }`}
       >
@@ -501,7 +473,7 @@ export const MapView: React.FC<MapViewProps> = ({
         </div>
         <svg
           viewBox={dynamicViewBox}
-          className="w-full h-auto min-h-[300px] xs:min-h-[340px] max-h-[480px] md:max-h-[540px] lg:max-h-[640px] xl:max-h-[720px] select-none"
+          className="w-full h-full max-w-full max-h-full select-none"
           preserveAspectRatio="xMidYMid meet"
         >
           <defs>
@@ -602,7 +574,20 @@ export const MapView: React.FC<MapViewProps> = ({
                 <g
                   key={node.id}
                   transform={`translate(${node.x}, ${node.y})`}
-                  onClick={() => handleNodeClick(node.id)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleNodeClick(node.id);
+                  }}
+                  onPointerDown={(e) => {
+                    // Prevent map drag tracking when clicking directly on a node
+                    e.stopPropagation();
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      handleNodeClick(node.id);
+                    }
+                  }}
                   onMouseEnter={() => setHoveredNodeId(node.id)}
                   onMouseLeave={() => setHoveredNodeId(null)}
                   className="svg-location-node cursor-pointer"
@@ -728,66 +713,10 @@ export const MapView: React.FC<MapViewProps> = ({
                     </g>
                   )}
 
-                  {/* Target Delivery Badge */}
+                  {/* Auditorium Final Destination Badge */}
                   {isTarget && (
                     <g transform="translate(0, -38)" className="pointer-events-none">
                       {hasDelivered ? (
-                        <g>
-                          <rect
-                            x="-38"
-                            y="-10"
-                            width="76"
-                            height="20"
-                            rx="10"
-                            fill="#065f46"
-                            stroke="#34d399"
-                            strokeWidth="1.4"
-                          />
-                          <text
-                            x="0"
-                            y="4"
-                            textAnchor="middle"
-                            fill="#ecfdf5"
-                            fontSize="9.5"
-                            fontWeight="800"
-                          >
-                            ✓ DELIVERED
-                          </text>
-                        </g>
-                      ) : (
-                        <g>
-                          <rect
-                            x="-45"
-                            y="-11"
-                            width="90"
-                            height="22"
-                            rx="11"
-                            fill="#0369a1"
-                            stroke="#38bdf8"
-                            strokeWidth="1.6"
-                            className="animate-pulse"
-                          />
-                          <polygon points="-5,11 5,11 0,15" fill="#38bdf8" />
-                          <text
-                            x="0"
-                            y="4.5"
-                            textAnchor="middle"
-                            fill="#f0f9ff"
-                            fontSize="10"
-                            fontWeight="800"
-                            letterSpacing="0.04em"
-                          >
-                            🎯 DESTINATION
-                          </text>
-                        </g>
-                      )}
-                    </g>
-                  )}
-
-                  {/* START / FINISH Marker at Food Truck */}
-                  {node.id === 'food_truck' && (
-                    <g transform="translate(0, -38)" className="pointer-events-none">
-                      {hasDelivered && !isCurrent ? (
                         <g>
                           <rect
                             x="-48"
@@ -795,50 +724,80 @@ export const MapView: React.FC<MapViewProps> = ({
                             width="96"
                             height="22"
                             rx="11"
-                            fill="#b45309"
-                            stroke="#fde047"
+                            fill="#065f46"
+                            stroke="#34d399"
                             strokeWidth="1.6"
-                            className="animate-pulse"
                           />
-                          <polygon points="-5,11 5,11 0,15" fill="#fde047" />
+                          <polygon points="-5,11 5,11 0,15" fill="#34d399" />
                           <text
                             x="0"
                             y="4.5"
                             textAnchor="middle"
-                            fill="#fef08a"
-                            fontSize="10"
-                            fontWeight="800"
+                            fill="#ecfdf5"
+                            fontSize="9.5"
+                            fontWeight="900"
                             letterSpacing="0.04em"
                           >
-                            🏁 FINISH HERE
+                            🏆 ARRIVED!
                           </text>
                         </g>
                       ) : (
                         <g>
                           <rect
-                            x="-38"
-                            y="-11"
-                            width="76"
-                            height="22"
-                            rx="11"
-                            fill="#78350f"
+                            x="-56"
+                            y="-12"
+                            width="112"
+                            height="24"
+                            rx="12"
+                            fill="#7c2d12"
                             stroke="#f59e0b"
-                            strokeWidth="1.6"
+                            strokeWidth="1.8"
+                            className="animate-pulse"
                           />
-                          <polygon points="-5,11 5,11 0,15" fill="#f59e0b" />
+                          <polygon points="-6,12 6,12 0,17" fill="#f59e0b" />
                           <text
                             x="0"
                             y="4.5"
                             textAnchor="middle"
                             fill="#fef3c7"
-                            fontSize="10.5"
-                            fontWeight="800"
+                            fontSize="10"
+                            fontWeight="900"
                             letterSpacing="0.04em"
                           >
-                            🚩 START
+                            🎭 AUDITORIUM
                           </text>
                         </g>
                       )}
+                    </g>
+                  )}
+
+                  {/* START Marker at In Gate */}
+                  {node.id === 'food_truck' && (
+                    <g transform="translate(0, -38)" className="pointer-events-none">
+                      <g>
+                        <rect
+                          x="-48"
+                          y="-11"
+                          width="96"
+                          height="22"
+                          rx="11"
+                          fill="#14532d"
+                          stroke="#22c55e"
+                          strokeWidth="1.6"
+                        />
+                        <polygon points="-5,11 5,11 0,15" fill="#22c55e" />
+                        <text
+                          x="0"
+                          y="4.5"
+                          textAnchor="middle"
+                          fill="#dcfce7"
+                          fontSize="9.5"
+                          fontWeight="900"
+                          letterSpacing="0.04em"
+                        >
+                          🚪 IN GATE (START)
+                        </text>
+                      </g>
                     </g>
                   )}
 
@@ -892,61 +851,6 @@ export const MapView: React.FC<MapViewProps> = ({
             })}
           </g>
         </svg>
-      </div>
-
-      {/* Quick Move Button Bar: Adjacent Connected Locations (Mobile-First Touch Bar) */}
-      <div className="bg-slate-900/95 border-t border-slate-800 p-2.5 sm:p-3 flex flex-col gap-2">
-        <div className="flex items-center justify-between text-xs">
-          <div className="flex items-center gap-1.5 text-slate-300 font-semibold text-xs sm:text-sm">
-            <Route className="w-3.5 h-3.5 text-sky-400" />
-            <span>Connected Roads:</span>
-            <span className="text-[11px] text-slate-400 font-normal">
-              ({validNextMoves.length} choices)
-            </span>
-          </div>
-          <span className="text-[11px] text-slate-400 hidden xs:inline">
-            Tap node above or quick button below:
-          </span>
-        </div>
-
-        {/* Big finger-friendly touch buttons (min 44px height for mobile accessibility) */}
-        <div className="grid grid-cols-2 sm:flex sm:flex-wrap gap-2">
-          {validNextMoves.map((move) => {
-            const nextNode = nodes[move.nodeId];
-            const isTarget = move.nodeId === targetDestination;
-            const isRec = isHintActive && hintData?.recommendedNode === move.nodeId;
-
-            return (
-              <button
-                key={move.nodeId}
-                onClick={() => handleNodeClick(move.nodeId)}
-                className={`min-h-[46px] px-3 py-2 rounded-xl text-xs sm:text-sm font-semibold border flex items-center justify-between sm:justify-start gap-2 transition-all cursor-pointer active:scale-95 shadow-sm ${
-                  isRec
-                    ? 'bg-amber-500/25 text-amber-100 border-amber-400 shadow-amber-500/10'
-                    : isTarget
-                    ? 'bg-sky-500/25 text-sky-100 border-sky-400 hover:bg-sky-500/35'
-                    : 'bg-slate-800/90 hover:bg-slate-700/90 text-slate-100 border-slate-700'
-                }`}
-              >
-                <div className="flex items-center gap-1.5 truncate">
-                  <span className="text-base sm:text-lg shrink-0">{nextNode.emoji}</span>
-                  <span className="truncate">{nextNode.shortName}</span>
-                </div>
-
-                <div className="flex items-center gap-1.5 shrink-0">
-                  <span className="text-xs font-mono-tabular font-bold px-1.5 py-0.5 rounded bg-slate-950/70 border border-slate-700 text-slate-200">
-                    +{move.weight}m
-                  </span>
-                  {isTarget && !hasDelivered && (
-                    <span className="text-[9px] bg-sky-500 text-slate-950 font-black px-1.5 py-0.5 rounded">
-                      GOAL
-                    </span>
-                  )}
-                </div>
-              </button>
-            );
-          })}
-        </div>
       </div>
 
     </div>

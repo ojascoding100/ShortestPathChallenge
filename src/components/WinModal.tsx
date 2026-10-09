@@ -1,5 +1,5 @@
 import React from 'react';
-import { Trophy, AlertTriangle, RotateCcw, X, CheckCircle2, Route, ArrowRight, Eye, Sparkles } from 'lucide-react';
+import { Trophy, AlertTriangle, RotateCcw, X, Route, ArrowRight } from 'lucide-react';
 import { GraphNode, MoveStep, NodeId } from '../types/graph';
 import { RoundTripResult } from '../utils/graphAlgorithms';
 
@@ -11,10 +11,9 @@ interface WinModalProps {
   moveHistory: MoveStep[];
   nodes: Record<NodeId, GraphNode>;
   optimalRouteResult: RoundTripResult;
+  elapsedTime?: string;
   onClose: () => void;
   onReset: () => void;
-  onNextOrder: () => void;
-  onViewShortestPathOnMap: () => void;
 }
 
 export const WinModal: React.FC<WinModalProps> = ({
@@ -25,10 +24,9 @@ export const WinModal: React.FC<WinModalProps> = ({
   moveHistory,
   nodes,
   optimalRouteResult,
+  elapsedTime,
   onClose,
   onReset,
-  onNextOrder,
-  onViewShortestPathOnMap,
 }) => {
   if (!isOpen) return null;
 
@@ -61,10 +59,10 @@ export const WinModal: React.FC<WinModalProps> = ({
           </div>
 
           <h2 className="text-2xl font-extrabold tracking-tight text-white">
-            Delivery Complete!
+            Auditorium Reached!
           </h2>
           <p className="text-xs text-slate-400 mt-1">
-            Successfully delivered to {targetNode.emoji} <strong className="text-slate-200">{targetNode.name}</strong> and returned to Food Truck.
+            Successfully traveled from 🚪 <strong className="text-emerald-400">In Gate</strong> to 🎭 <strong className="text-amber-300">Auditorium</strong> ({targetNode.name}).
           </p>
         </div>
 
@@ -78,17 +76,17 @@ export const WinModal: React.FC<WinModalProps> = ({
         >
           <p className="text-sm font-bold">
             {isOptimal
-              ? `🏆 Optimal Path! You achieved the true shortest round-trip route (${parTime} mins)!`
-              : `You took ${totalTime} mins! The shortest possible path was ${parTime} mins. Can you find the optimal route?`}
+              ? `🏆 Optimal Path! You achieved the true shortest one-way route (${parTime} mins)!`
+              : `You took ${totalTime} mins! The shortest path was ${parTime} mins. Can you find the optimal detour?`}
           </p>
         </div>
 
-        {/* Stats - Two Timers & Delivery count */}
+        {/* Stats - Two Timers & Real Time */}
         <div className="grid grid-cols-3 gap-2 mb-4 font-mono-tabular">
           <div className="bg-slate-950 border border-slate-800 rounded-lg p-2 text-center">
             <span className="text-[9px] text-slate-400 block uppercase font-bold truncate">Current Path</span>
             <span
-              className={`text-lg md:text-xl font-extrabold ${
+              className={`text-base sm:text-lg font-extrabold ${
                 isOptimal ? 'text-emerald-400' : 'text-amber-400'
               }`}
             >
@@ -97,14 +95,14 @@ export const WinModal: React.FC<WinModalProps> = ({
           </div>
 
           <div className="bg-slate-950 border border-slate-800 rounded-lg p-2 text-center">
-            <span className="text-[9px] text-slate-400 block uppercase font-bold truncate">Shortest Target</span>
-            <span className="text-lg md:text-xl font-extrabold text-cyan-400">{parTime}m</span>
+            <span className="text-[9px] text-slate-400 block uppercase font-bold truncate">Target Time</span>
+            <span className="text-base sm:text-lg font-extrabold text-cyan-400">{parTime}m</span>
           </div>
 
           <div className="bg-slate-950 border border-slate-800 rounded-lg p-2 text-center">
-            <span className="text-[9px] text-slate-400 block uppercase font-bold truncate">Drop-offs</span>
-            <span className="text-lg md:text-xl font-extrabold text-white flex items-center justify-center gap-1">
-              1/1 <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 inline" />
+            <span className="text-[9px] text-slate-400 block uppercase font-bold truncate">Time Elapsed</span>
+            <span className="text-base sm:text-lg font-extrabold text-amber-300">
+              {elapsedTime || '00:00'}
             </span>
           </div>
         </div>
@@ -114,18 +112,8 @@ export const WinModal: React.FC<WinModalProps> = ({
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-1.5 font-bold text-emerald-300">
               <Route className="w-4 h-4 text-emerald-400" />
-              <span>Optimal Round-Trip Path ({optimalRouteResult.totalTime} mins)</span>
+              <span>Optimal One-Way Route ({parTime} mins)</span>
             </div>
-            <button
-              onClick={() => {
-                onClose();
-                onViewShortestPathOnMap();
-              }}
-              className="text-[11px] font-semibold text-emerald-400 hover:text-emerald-300 flex items-center gap-1 underline cursor-pointer"
-            >
-              <Eye className="w-3 h-3" />
-              <span>Show on Map</span>
-            </button>
           </div>
 
           <div className="space-y-1.5 max-h-40 overflow-y-auto pr-1">
@@ -151,9 +139,9 @@ export const WinModal: React.FC<WinModalProps> = ({
           </div>
 
           <div className="mt-2 pt-2 border-t border-slate-800/80 flex items-center justify-between text-[11px] text-slate-400">
-            <span>Round-Trip Total</span>
+            <span>Shortest Time to Auditorium</span>
             <span className="text-white font-bold font-mono-tabular">
-              {optimalRouteResult.totalTime} mins
+              {parTime} mins
             </span>
           </div>
         </div>
@@ -165,21 +153,10 @@ export const WinModal: React.FC<WinModalProps> = ({
               onClose();
               onReset();
             }}
-            className="flex-1 py-2 px-3 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold flex items-center justify-center gap-1.5 cursor-pointer transition-colors"
+            className="w-full py-3 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-bold flex items-center justify-center gap-2 cursor-pointer transition-colors shadow-lg shadow-emerald-900/30 active:scale-95"
           >
-            <RotateCcw className="w-3.5 h-3.5" />
-            <span>Retry This Location</span>
-          </button>
-
-          <button
-            onClick={() => {
-              onClose();
-              onNextOrder();
-            }}
-            className="flex-1 py-2 px-3 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer transition-colors shadow-lg shadow-emerald-900/30"
-          >
-            <Sparkles className="w-3.5 h-3.5" />
-            <span>Next Delivery Order</span>
+            <RotateCcw className="w-4 h-4" />
+            <span>Play Again</span>
           </button>
         </div>
 

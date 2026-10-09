@@ -90,10 +90,10 @@ export const EducationalModal: React.FC<EducationalModalProps> = ({ isOpen, onCl
                   <span className="text-amber-400">01.</span> The Core Concept & The Straight-Line Trap
                 </h3>
                 <p className="text-xs text-slate-300 leading-relaxed mb-3">
-                  In modern food delivery apps (like Swiggy, Zomato, DoorDash, or UberEats), human intuition is completely replaced by graph algorithms. When players look at this campus map, their eyes naturally gravitate toward the <strong>obvious straight lines</strong> heading directly toward their destination (e.g. the central corridor to Student Union, Quad, and CS Building).
+                  In modern pathfinding algorithms, human intuition is tested by graph weights. When players look at this campus map, their eyes naturally gravitate toward the <strong>obvious straight lines</strong> heading directly toward their destination (e.g. the central corridor from In Gate to Main Building, Boat Club, and AI&DS Building).
                 </p>
                 <div className="p-3 bg-rose-950/20 border border-rose-500/30 rounded-lg text-xs text-rose-200">
-                  <strong>The Trap:</strong> Straight lines on campus are heavily congested pedestrian thoroughfares, construction zones (8m!), and bottlenecks! Plowing straight ahead results in a catastrophic 40+ minute round-trip, whereas clever bypasses and perimeter loops through the athletics and garden lanes cut the time down to just 24 minutes.
+                  <strong>The Trap:</strong> Straight lines on campus are heavily congested pedestrian thoroughfares, construction zones (8m!), and bottlenecks! Plowing straight ahead results in a long 20-minute trip to AI&DS Building, whereas clever bypasses through the AI/ML Building, Kiosk, and Boat Club cut the one-way time down to just 12 minutes!
                 </div>
               </div>
 

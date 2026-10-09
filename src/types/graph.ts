@@ -41,152 +41,173 @@ export interface MoveStep {
 export const INITIAL_NODES: Record<NodeId, GraphNode> = {
   food_truck: {
     id: 'food_truck',
-    name: 'Food Truck',
-    shortName: 'Food Truck',
+    name: 'In Gate',
+    shortName: 'In Gate',
     role: 'depot',
-    emoji: '🚚',
+    emoji: '🚪',
     x: 90,
     y: 270,
-    description: 'Starting Kitchen Depot & Finish Return Hub',
+    description: 'Campus Main Entrance & Starting Gate',
+    orderItem: 'Visitor Pass & Map',
   },
   library: {
     id: 'library',
-    name: 'Campus Library',
-    shortName: 'Library',
+    name: 'Parking',
+    shortName: 'Parking',
     role: 'target',
-    emoji: '📚',
+    emoji: '🅿️',
     x: 250,
     y: 110,
-    description: 'Quiet Study Hall - 3rd Floor',
-    orderItem: 'Hot Espresso & Butter Croissant',
+    description: 'North Campus Vehicle Parking Lot',
+    orderItem: 'Parking Ticket Clearance',
   },
   science_center: {
     id: 'science_center',
-    name: 'Science Labs',
-    shortName: 'Science Labs',
+    name: 'Main Canteen',
+    shortName: 'Main Canteen',
     role: 'target',
-    emoji: '🔬',
+    emoji: '🍱',
     x: 490,
     y: 90,
-    description: 'Chemistry & Bio Lab Complex',
-    orderItem: 'Energy Bento & Matcha Latte',
+    description: 'Multi-Cuisine Campus Food Hall',
+    orderItem: 'Lunch Bento & Fresh Juice',
   },
   observatory: {
     id: 'observatory',
-    name: 'Observatory',
-    shortName: 'Observatory',
+    name: 'Bakery',
+    shortName: 'Bakery',
     role: 'target',
-    emoji: '🔭',
+    emoji: '🥐',
     x: 770,
     y: 90,
-    description: 'Astronomy Hill Dome',
-    orderItem: 'Stargazer Hot Cocoa & Bagel',
+    description: 'Fresh Campus Patisserie & Oven',
+    orderItem: 'Warm Croissant & Hot Cocoa',
   },
   student_union: {
     id: 'student_union',
-    name: 'Student Union',
-    shortName: 'Union',
+    name: 'Main Building',
+    shortName: 'Main Bldg',
     role: 'target',
-    emoji: '☕',
+    emoji: '🏛️',
     x: 320,
     y: 310,
-    description: 'Central Hub & Student Lounge',
-    orderItem: 'Crispy Wrap & Fresh Lemonade',
+    description: 'Administrative & Academic Headquarters',
+    orderItem: 'Dean Office Dispatch',
   },
   quad: {
     id: 'quad',
-    name: 'Central Quad',
-    shortName: 'The Quad',
+    name: 'Boat Club',
+    shortName: 'Boat Club',
     role: 'target',
-    emoji: '🌳',
+    emoji: '⛵',
     x: 550,
     y: 240,
-    description: 'Main Campus Lawn & Trees',
-    orderItem: 'Acai Berry Bowl & Pretzel',
+    description: 'Waterside Rowing & Boat Club House',
+    orderItem: 'Regatta Team Supplies',
   },
   cs_building: {
     id: 'cs_building',
-    name: 'CS Building',
-    shortName: 'CS Building',
+    name: 'AI&DS Building',
+    shortName: 'AI&DS Bldg',
     role: 'target',
     emoji: '💻',
     x: 830,
     y: 280,
-    description: 'Turing Code Lab 204',
-    orderItem: 'Boba Milk Tea & Pepperoni Pizza',
+    description: 'Data Science & Neural Systems Laboratory',
+    orderItem: 'Server Hardware Kit',
   },
   stadium: {
     id: 'stadium',
-    name: 'Varsity Stadium',
-    shortName: 'Stadium',
+    name: 'AI/ML Building',
+    shortName: 'AI/ML Bldg',
     role: 'target',
-    emoji: '🏟️',
+    emoji: '🤖',
     x: 150,
     y: 440,
-    description: 'Athletics & Track Concourse',
-    orderItem: 'Loaded Stadium Nachos & Soda',
+    description: 'Artificial Intelligence & Machine Learning Wing',
+    orderItem: 'GPU Compute Module',
   },
   gym: {
     id: 'gym',
-    name: 'Recreation Gym',
-    shortName: 'Gym',
+    name: 'Kiosk',
+    shortName: 'Kiosk',
     role: 'target',
-    emoji: '🏋️',
+    emoji: '🏪',
     x: 370,
     y: 460,
-    description: 'Fitness Center & Courts',
-    orderItem: 'Protein Shake & Energy Bar',
+    description: 'Central Concession & Refreshment Kiosk',
+    orderItem: 'Energy Drink & Snack Pack',
   },
   dorms: {
     id: 'dorms',
-    name: 'Campus Dorms',
-    shortName: 'Dorms',
+    name: 'Fruit Canteen',
+    shortName: 'Fruit Canteen',
     role: 'target',
-    emoji: '🏢',
+    emoji: '🍉',
     x: 690,
     y: 430,
-    description: 'North Residential Tower 4B',
-    orderItem: 'Midnight Ramen Bowl & Dumplings',
+    description: 'Fresh Juices & Organic Fruit Station',
+    orderItem: 'Seasonal Fruit Salad',
   },
 };
 
 export const GRAPH_EDGES: GraphEdge[] = [
-  // West Depot Hub
-  { id: 'ft-sta', from: 'food_truck', to: 'stadium', weight: 3 },       // Quick paved lane to Athletics Stadium
-  { id: 'ft-lib', from: 'food_truck', to: 'library', weight: 4 },       // Hill stairs to Library
-  { id: 'ft-uni', from: 'food_truck', to: 'student_union', weight: 8 }, // Cobblestone Main Plaza: Heavy pedestrian crowd & construction (8m trap!)
+  // West In Gate Connections
+  { id: 'ft-sta', from: 'food_truck', to: 'stadium', weight: 3 },       // Quick paved lane to AI/ML Building (3m)
+  { id: 'ft-lib', from: 'food_truck', to: 'library', weight: 4 },       // Walkway to Parking (4m)
+  { id: 'ft-uni', from: 'food_truck', to: 'student_union', weight: 8 }, // Direct Main Plaza to Main Building (8m crowded trap!)
 
   // North Sector
-  { id: 'lib-uni', from: 'library', to: 'student_union', weight: 2 },   // Fast covered breezeway (FT->Lib->Uni = 4+2=6m < 8m!)
-  { id: 'lib-sci', from: 'library', to: 'science_center', weight: 7 },  // Upper North Walkway: Heavy foot traffic & stairs (7m slow!)
-  { id: 'sci-qua', from: 'science_center', to: 'quad', weight: 2 },     // Shaded botanical path to Quad (2m fast!)
-  { id: 'sci-obs', from: 'science_center', to: 'observatory', weight: 6 }, // Steep mountain stairs to Observatory (6m slow!)
+  { id: 'lib-uni', from: 'library', to: 'student_union', weight: 2 },   // Fast breezeway from Parking to Main Bldg (2m shortcut: 4+2=6m < 8m!)
+  { id: 'lib-sci', from: 'library', to: 'science_center', weight: 7 },  // Upper North Walkway to Main Canteen (7m slow!)
+  { id: 'sci-qua', from: 'science_center', to: 'quad', weight: 2 },     // Shaded botanical path to Boat Club (2m fast!)
+  { id: 'sci-obs', from: 'science_center', to: 'observatory', weight: 6 }, // Steep trail to Bakery (6m slow!)
 
-  // Central Sector & Quad
+  // Central Sector & Boat Club
   { id: 'uni-qua', from: 'student_union', to: 'quad', weight: 5 },      // Central Concourse (5m)
-  { id: 'uni-gym', from: 'student_union', to: 'gym', weight: 2 },       // Student Arcade Corridor (2m)
-  { id: 'qua-csb', from: 'quad', to: 'cs_building', weight: 7 },        // Tech Plaza Construction: Slow bottleneck (7m trap!)
-  { id: 'qua-dor', from: 'quad', to: 'dorms', weight: 2 },              // Pine Grove Trail (2m fast!)
-  { id: 'qua-obs', from: 'quad', to: 'observatory', weight: 3 },        // Ridge Hill Trail to Observatory (3m fast shortcut!)
+  { id: 'uni-gym', from: 'student_union', to: 'gym', weight: 2 },       // Arcade corridor to Kiosk (2m)
+  { id: 'qua-csb', from: 'quad', to: 'cs_building', weight: 7 },        // Plaza bottleneck to AI&DS Bldg (7m trap!)
+  { id: 'qua-dor', from: 'quad', to: 'dorms', weight: 2 },              // Pine Grove Trail to Fruit Canteen (2m fast!)
+  { id: 'qua-obs', from: 'quad', to: 'observatory', weight: 3 },        // Ridge shortcut to Bakery (3m fast!)
   { id: 'gym-qua', from: 'gym', to: 'quad', weight: 3 },                // Campus Lawn Pathway (3m)
 
   // South Sector
-  { id: 'sta-gym', from: 'stadium', to: 'gym', weight: 2 },             // Athletics Bike Expressway (2m fast!)
-  { id: 'gym-dor', from: 'gym', to: 'dorms', weight: 6 },               // South Perimeter Road: Heavy service vehicle traffic (6m bottleneck!)
-  { id: 'dor-csb', from: 'dorms', to: 'cs_building', weight: 2 },       // Residence Breezeway to CS (2m fast!)
-  { id: 'obs-csb', from: 'observatory', to: 'cs_building', weight: 2 }, // Hillside Steps down to CS (2m fast!)
+  { id: 'sta-gym', from: 'stadium', to: 'gym', weight: 2 },             // Bike expressway from AI/ML Bldg to Kiosk (2m fast!)
+  { id: 'gym-dor', from: 'gym', to: 'dorms', weight: 6 },               // South Perimeter to Fruit Canteen (6m bottleneck!)
+  { id: 'dor-csb', from: 'dorms', to: 'cs_building', weight: 2 },       // Breezeway from Fruit Canteen to AI&DS Bldg (2m fast!)
+  { id: 'obs-csb', from: 'observatory', to: 'cs_building', weight: 2 }, // Hillside steps from Bakery to AI&DS Bldg (2m fast!)
 ];
 
+// Distant campus destinations far from In Gate (x >= 690, 4-5 hops, 10-12 mins away)
+// Boat Club ('quad') is excluded, and close nodes (Stadium, Parking, Main Bldg, Kiosk) are excluded
 export const AVAILABLE_TARGETS: NodeId[] = [
-  'cs_building',
-  'science_center',
-  'observatory',
-  'dorms',
-  'student_union',
-  'library',
-  'gym',
-  'stadium',
-  'quad',
+  'cs_building', // AI&DS Building (far east, 12 mins)
+  'observatory', // Bakery (far north-east, 11 mins)
+  'dorms',       // Fruit Canteen (far south-east, 10 mins)
 ];
 
 export const DEFAULT_TARGET_NODE: NodeId = 'cs_building';
+
+export function getRandomTarget(): NodeId {
+  const index = Math.floor(Math.random() * AVAILABLE_TARGETS.length);
+  return AVAILABLE_TARGETS[index];
+}
+
+/**
+ * Returns a cloned nodes dictionary where the designated target node
+ * is dynamically renamed to "Auditorium" (with 🎭 emoji).
+ */
+export function getNodesWithAuditorium(targetId: NodeId): Record<NodeId, GraphNode> {
+  const updated = { ...INITIAL_NODES };
+  if (updated[targetId]) {
+    updated[targetId] = {
+      ...updated[targetId],
+      name: 'Auditorium',
+      shortName: 'Auditorium',
+      emoji: '🎭',
+      description: 'Campus Grand Auditorium & Event Hall',
+      orderItem: 'Keynote Stage Dispatch',
+    };
+  }
+  return updated;
+}
