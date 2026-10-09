@@ -481,34 +481,43 @@
 
   <script>
     const NODES = {
-      food_truck: { id: 'food_truck', name: 'Food Truck', shortName: 'Food Truck', emoji: '🚚', x: 100, y: 270, desc: 'Kitchen Depot & Finish Hub' },
-      library: { id: 'library', name: 'Campus Library', shortName: 'Library', emoji: '📚', x: 280, y: 120, desc: 'Hot Espresso & Butter Croissant' },
-      science_center: { id: 'science_center', name: 'Science Labs', shortName: 'Science Labs', emoji: '🔬', x: 530, y: 100, desc: 'Energy Bento & Matcha Latte' },
-      observatory: { id: 'observatory', name: 'Observatory', shortName: 'Observatory', emoji: '🔭', x: 780, y: 110, desc: 'Stargazer Hot Cocoa & Bagel' },
-      student_union: { id: 'student_union', name: 'Student Union', shortName: 'Union', emoji: '☕', x: 330, y: 270, desc: 'Crispy Wrap & Fresh Lemonade' },
-      quad: { id: 'quad', name: 'Central Quad', shortName: 'The Quad', emoji: '🌳', x: 560, y: 260, desc: 'Acai Berry Bowl & Pretzel' },
-      cs_building: { id: 'cs_building', name: 'CS Building', shortName: 'CS Building', emoji: '💻', x: 800, y: 260, desc: 'Boba Milk Tea & Pepperoni Pizza' },
-      stadium: { id: 'stadium', name: 'Varsity Stadium', shortName: 'Stadium', emoji: '🏟️', x: 160, y: 440, desc: 'Loaded Stadium Nachos & Soda' },
-      gym: { id: 'gym', name: 'Recreation Gym', shortName: 'Gym', emoji: '🏋️', x: 390, y: 440, desc: 'Protein Shake & Energy Bar' },
-      dorms: { id: 'dorms', name: 'Campus Dorms', shortName: 'Dorms', emoji: '🏢', x: 670, y: 440, desc: 'Midnight Ramen Bowl & Dumplings' }
+      food_truck: { id: 'food_truck', name: 'Food Truck', shortName: 'Food Truck', emoji: '🚚', x: 90, y: 270, desc: 'Kitchen Depot & Finish Hub' },
+      library: { id: 'library', name: 'Campus Library', shortName: 'Library', emoji: '📚', x: 250, y: 110, desc: 'Hot Espresso & Butter Croissant' },
+      science_center: { id: 'science_center', name: 'Science Labs', shortName: 'Science Labs', emoji: '🔬', x: 490, y: 90, desc: 'Energy Bento & Matcha Latte' },
+      observatory: { id: 'observatory', name: 'Observatory', shortName: 'Observatory', emoji: '🔭', x: 770, y: 90, desc: 'Stargazer Hot Cocoa & Bagel' },
+      student_union: { id: 'student_union', name: 'Student Union', shortName: 'Union', emoji: '☕', x: 320, y: 310, desc: 'Crispy Wrap & Fresh Lemonade' },
+      quad: { id: 'quad', name: 'Central Quad', shortName: 'The Quad', emoji: '🌳', x: 550, y: 240, desc: 'Acai Berry Bowl & Pretzel' },
+      cs_building: { id: 'cs_building', name: 'CS Building', shortName: 'CS Building', emoji: '💻', x: 830, y: 280, desc: 'Boba Milk Tea & Pepperoni Pizza' },
+      stadium: { id: 'stadium', name: 'Varsity Stadium', shortName: 'Stadium', emoji: '🏟️', x: 150, y: 440, desc: 'Loaded Stadium Nachos & Soda' },
+      gym: { id: 'gym', name: 'Recreation Gym', shortName: 'Gym', emoji: '🏋️', x: 370, y: 460, desc: 'Protein Shake & Energy Bar' },
+      dorms: { id: 'dorms', name: 'Campus Dorms', shortName: 'Dorms', emoji: '🏢', x: 690, y: 430, desc: 'Midnight Ramen Bowl & Dumplings' }
     };
 
     const EDGES = [
-      { id: 'ft-lib', from: 'food_truck', to: 'library', weight: 6 },
-      { id: 'ft-uni', from: 'food_truck', to: 'student_union', weight: 4 },
-      { id: 'ft-sta', from: 'food_truck', to: 'stadium', weight: 2 },
-      { id: 'lib-sci', from: 'library', to: 'science_center', weight: 5 },
-      { id: 'lib-uni', from: 'library', to: 'student_union', weight: 3 },
-      { id: 'sci-obs', from: 'science_center', to: 'observatory', weight: 7 },
-      { id: 'sci-qua', from: 'science_center', to: 'quad', weight: 4 },
-      { id: 'obs-csb', from: 'observatory', to: 'cs_building', weight: 3 },
+      // West Depot Hub
+      { id: 'ft-sta', from: 'food_truck', to: 'stadium', weight: 3 },
+      { id: 'ft-lib', from: 'food_truck', to: 'library', weight: 4 },
+      { id: 'ft-uni', from: 'food_truck', to: 'student_union', weight: 8 },
+
+      // North Sector
+      { id: 'lib-uni', from: 'library', to: 'student_union', weight: 2 },
+      { id: 'lib-sci', from: 'library', to: 'science_center', weight: 7 },
+      { id: 'sci-qua', from: 'science_center', to: 'quad', weight: 2 },
+      { id: 'sci-obs', from: 'science_center', to: 'observatory', weight: 6 },
+
+      // Central Sector & Quad
       { id: 'uni-qua', from: 'student_union', to: 'quad', weight: 5 },
-      { id: 'uni-gym', from: 'student_union', to: 'gym', weight: 3 },
-      { id: 'qua-csb', from: 'quad', to: 'cs_building', weight: 6 },
-      { id: 'qua-dor', from: 'quad', to: 'dorms', weight: 4 },
-      { id: 'sta-gym', from: 'stadium', to: 'gym', weight: 8 },
+      { id: 'uni-gym', from: 'student_union', to: 'gym', weight: 2 },
+      { id: 'qua-csb', from: 'quad', to: 'cs_building', weight: 7 },
+      { id: 'qua-dor', from: 'quad', to: 'dorms', weight: 2 },
+      { id: 'qua-obs', from: 'quad', to: 'observatory', weight: 3 },
+      { id: 'gym-qua', from: 'gym', to: 'quad', weight: 3 },
+
+      // South Sector
+      { id: 'sta-gym', from: 'stadium', to: 'gym', weight: 2 },
       { id: 'gym-dor', from: 'gym', to: 'dorms', weight: 6 },
-      { id: 'dor-csb', from: 'dorms', to: 'cs_building', weight: 3 }
+      { id: 'dor-csb', from: 'dorms', to: 'cs_building', weight: 2 },
+      { id: 'obs-csb', from: 'observatory', to: 'cs_building', weight: 2 }
     ];
 
     const TARGET_OPTIONS = ['cs_building', 'science_center', 'observatory', 'dorms', 'student_union', 'library', 'gym', 'stadium', 'quad'];

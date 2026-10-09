@@ -2,6 +2,5 @@
   "name": "The Food Delivery Routing Challenge",
   "description": "An interactive educational graph theory puzzle game exploring the Traveling Salesperson Problem, Dijkstra's algorithm, and the Greedy Trap.",
   "requestFramePermissions": [],
-  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+  "majorCapabilities": []
 }
-

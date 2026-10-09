@@ -87,13 +87,13 @@ export const EducationalModal: React.FC<EducationalModalProps> = ({ isOpen, onCl
               
               <div className="bg-slate-950/60 border border-slate-800 rounded-xl p-4">
                 <h3 className="text-sm font-bold text-white flex items-center gap-2 mb-2">
-                  <span className="text-amber-400">01.</span> The Core Concept & The Educational Hook
+                  <span className="text-amber-400">01.</span> The Core Concept & The Straight-Line Trap
                 </h3>
                 <p className="text-xs text-slate-300 leading-relaxed mb-3">
-                  In modern food delivery apps (like Swiggy, Zomato, DoorDash, or UberEats), human intuition is completely replaced by graph algorithms. When players look at this campus map, their eyes are immediately drawn to the <strong>2-minute edge to the Library</strong> because it is the cheapest immediate option.
+                  In modern food delivery apps (like Swiggy, Zomato, DoorDash, or UberEats), human intuition is completely replaced by graph algorithms. When players look at this campus map, their eyes naturally gravitate toward the <strong>obvious straight lines</strong> heading directly toward their destination (e.g. the central corridor to Student Union, Quad, and CS Building).
                 </p>
                 <div className="p-3 bg-rose-950/20 border border-rose-500/30 rounded-lg text-xs text-rose-200">
-                  <strong>The Trap:</strong> Taking that 2-minute bait forces you into a bottleneck where leaving the Library requires 12 minutes (to the Quad) or 15 minutes (to the CS Building)! The "immediate saving" produces a catastrophic 28+ minute round-trip.
+                  <strong>The Trap:</strong> Straight lines on campus are heavily congested pedestrian thoroughfares, construction zones (8m!), and bottlenecks! Plowing straight ahead results in a catastrophic 40+ minute round-trip, whereas clever bypasses and perimeter loops through the athletics and garden lanes cut the time down to just 24 minutes.
                 </div>
               </div>
 
